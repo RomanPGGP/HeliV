@@ -17,9 +17,6 @@
 using namespace std;
 using namespace cv;
 
-// Here we will store points
-vector<Point> points;
-
 bool stop = false;
 CRawImage *image;
 CHeli *heli;
@@ -39,8 +36,6 @@ int vG;
 int vB;
 
 Mat imagenClick;
-
-void flipImageBasic(const Mat &sourceImage, Mat &destinationImage);
 
 // Convert CRawImage to Mat
 void rawToMat( Mat &destImage, CRawImage* sourceImage)
@@ -82,7 +77,8 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
 
 int main(int argc,char* argv[])
 {
-
+    VideoCapture camera;
+    camera.open(0);
 	//establishing connection with the quadcopter
 	heli = new CHeli();
 	
@@ -95,7 +91,6 @@ int main(int argc,char* argv[])
 
 	// Destination OpenCV Mat	
 	Mat currentImage = Mat(240, 320, CV_8UC3);
-    Mat flippedImage;
 	// Show it	
 	imshow("ParrotCam", currentImage);
 
@@ -110,22 +105,6 @@ int main(int argc,char* argv[])
 
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
-
-    if (currentImage.data) 
-        {
-            /* Draw all points */
-            for (int i = 0; i < points.size(); ++i) {
-                circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
-            }
-
-            /* Show image */
-            imshow("Image", currentImage);
-
-        }
-        else
-        {
-            cout << "No image data.. " << endl;
-        }
 
     while (stop == false)
     {
@@ -195,15 +174,6 @@ int main(int argc,char* argv[])
             default: pitch = roll = yaw = height = 0.0;
 		}
 
-       
-        /* Call custom flipping routine. From OpenCV, you could call flip(currentImage, flippedImage, 1) */
-        flipImageBasic(currentImage, flippedImage);
-
-        /* Show images */
-        imshow("Original", currentImage);
-        imshow("Flipped", flippedImage);
-
-
         if (joypadTakeOff) {
             heli->takeoff();
         }
@@ -234,20 +204,3 @@ int main(int argc,char* argv[])
 	return 0;
 }
 
-/*
- * This method flips horizontally the sourceImage into destinationImage. Because it uses 
- * "Mat::at" method, its performance is low (redundant memory access searching for pixels).
- */
-void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
-{
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols / 2; ++x)
-            for (int i = 0; i < sourceImage.channels(); ++i)
-            {
-                destinationImage.at<Vec3b>(y, x)[i] = sourceImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i];
-                destinationImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i] = sourceImage.at<Vec3b>(y, x)[i];
-            }
-}
