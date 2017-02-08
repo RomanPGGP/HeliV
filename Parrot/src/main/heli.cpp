@@ -51,6 +51,7 @@ Mat flippedImageWC;
 Mat grayImageWC;
 Mat binaryImageWC;
 Mat HSVImageWC;
+Mat YIQImageWC; //creado por Ju
 
 bool clicked = false;
 
@@ -82,6 +83,37 @@ void Threshold_Demo( int, void* )
 
   imshow( window_name, binaryImageWC);
 }
+
+//Convert RGB to YIQ (Ju)
+void convert2YIQ(const Mat &sourceImage, Mat &destinationImage)
+{
+        int Y;
+        int I;
+        int Q;
+        int R;
+        int G;
+        int B;
+
+        if (destinationImage.empty())
+                destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+
+        for (int y = 0; y < sourceImage.rows; ++y)//Recorre las lineas
+                for (int x = 0; x < sourceImage.cols; ++x)//Recorrer las columnas
+		{
+                            B = sourceImage.at<Vec3b>(y, x)[1];//Channel B
+                            G = sourceImage.at<Vec3b>(y, x)[2];//Channel G
+                            R = sourceImage.at<Vec3b>(y, x)[3];//Channel R
+                            //Conversion from RGB to YIQ
+                            Y = 0.299*R + 0.587*G + 0.114*B;
+                            I = 0.596*R - 0.275*G - 0.321*B;
+                            Q = 0.212*R - 0.523*G + 0.311*B;
+                            //Changing the channel value to the YIQ world
+                            destinationImage.at<Vec3b>(y, x)[1] = Y;
+                            destinationImage.at<Vec3b>(y, x)[2] = I;
+                   	    destinationImage.at<Vec3b>(y, x)[3] = Q;
+		}
+}
+
 
 // Convert CRawImage to Mat
 void rawToMat( Mat &destImage, CRawImage* sourceImage)
@@ -266,6 +298,8 @@ int main(int argc,char* argv[])
         imshow("HSV", HSVImageWC);
 
         //YIQ
+	convert2YIQ(currentImageWC, YIQImageWC);
+	imshow("YIQ", YIQImageWC);
 
         // Copy to OpenCV Mat
         rawToMat(currentImage, image);
