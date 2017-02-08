@@ -180,14 +180,12 @@ int main(int argc,char* argv[])
 
 		//Click en pantalla codigo -----------------------------------------------------------------
 		/* Draw all points */
-		for (int i = 0; i < points.size(); ++i) {
-			circle(imagenClick, (Point)points[i],5 , Scalar( 0, 0, 255 ), CV_FILLED);
-			if((points.size() > 1) &&(i != 0)){
-                        	line(imagenClick, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0);
+		for (int i = 0; i < points.size(); ++i) { //Loop para dibujar constantemente los circulos y lineas
+			circle(imagenClick, (Point)points[i],5 , Scalar( 0, 0, 255 ), CV_FILLED); //Dibuja círculos
+			if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
+                        	line(imagenClick, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
 			}
 		}
-		Pxn=Px;
-                Pyn=Py;
 		/* Show image */
 		imshow("Click", imagenClick);
 		//FINAL CLICK EN PANTALLA
