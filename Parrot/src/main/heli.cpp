@@ -22,6 +22,7 @@ CRawImage *image;
 CHeli *heli;
 float pitch, roll, yaw, height;
 int hover=0;
+
 // Joystick related
 SDL_Joystick* m_joystick;
 bool useJoystick;
@@ -35,38 +36,23 @@ int vR;
 int vG;
 int vB;
 
-int Pxn, Pyn;
-
 Mat imagenClick;
-vector<Point> points; // Necesario para click en pantalla circle(...)
+
+// Here we will store points *CLICK*
+vector<Point> points;
+
 // Convert CRawImage to Mat
 void rawToMat( Mat &destImage, CRawImage* sourceImage)
-{	
-	uchar *pointerImage = destImage.ptr(0);
-	
-	for (int i = 0; i < 240*320; i++)
-	{
-		pointerImage[3*i] = sourceImage->data[3*i+2];
-		pointerImage[3*i+1] = sourceImage->data[3*i+1];
-		pointerImage[3*i+2] = sourceImage->data[3*i];
-	}
+{   
+    uchar *pointerImage = destImage.ptr(0);
+    
+    for (int i = 0; i < 240*320; i++)
+    {
+        pointerImage[3*i] = sourceImage->data[3*i+2];
+        pointerImage[3*i+1] = sourceImage->data[3*i+1];
+        pointerImage[3*i+2] = sourceImage->data[3*i];
+    }
 }
-//Flip Original
-void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
-{
-	if (destinationImage.empty())
-		destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-
-	for (int y = 0; y < sourceImage.rows; ++y)
-		for (int x = 0; x < sourceImage.cols / 2; ++x)
-			for (int i = 0; i < sourceImage.channels(); ++i)
-			{
-				destinationImage.at<Vec3b>(y, x)[i] = sourceImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i];
-				destinationImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i] = sourceImage.at<Vec3b>(y, x)[i];
-			}
-}
-
-
 
 //codigo del click en pantalla
 void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* param)
@@ -75,50 +61,78 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
     switch (event)
     {
         case CV_EVENT_LBUTTONDOWN:
-            Px=x;
-            Py=y;
-            destination = (uchar*) imagenClick.ptr<uchar>(Py);
-            vB=destination[Px * 3];
-            vG=destination[Px*3+1];
-            vR=destination[Px*3+2];
-	    points.push_back(Point(x, y));
-            break;
+        Px=x;
+        Py=y;
+        destination = (uchar*) imagenClick.ptr<uchar>(Py);
+        vB=destination[Px * 3];
+        vG=destination[Px*3+1];
+        vR=destination[Px*3+2];
+        points.push_back(Point(x, y));
+        break;
         case CV_EVENT_MOUSEMOVE:
-            break;
+        break;
         case CV_EVENT_LBUTTONUP:
-            break;
+        break;
         case CV_EVENT_RBUTTONDOWN:
         //flag=!flag;
-            break;
+        break;
         
     }
 }
 
+/*
+ * This method flips horizontally the sourceImage into destinationImage. Because it uses 
+ * "Mat::at" method, its performance is low (redundant memory access searching for pixels).
+ */
+void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
+{
+    if (destinationImage.empty())
+        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+
+    for (int y = 0; y < sourceImage.rows; ++y)
+        for (int x = 0; x < sourceImage.cols / 2; ++x)
+            for (int i = 0; i < sourceImage.channels(); ++i)
+            {
+                destinationImage.at<Vec3b>(y, x)[i] = sourceImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i];
+                destinationImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i] = sourceImage.at<Vec3b>(y, x)[i];
+            }
+}
+
 int main(int argc,char* argv[])
 {
-    VideoCapture camera;
-    camera.open(0);
-	//establishing connection with the quadcopter
-	heli = new CHeli();
-	
-	//this class holds the image from the drone	
-	image = new CRawImage(320,240);
-	
-	// Initial values for control	
+    bool clicked = false;
+
+    /* First, open camera device */    //TESTING ONLY
+    VideoCapture webcam;
+    webcam.open(0);
+
+    //establishing connection with the quadcopter
+    heli = new CHeli();
+    
+    //this class holds the image from the drone 
+    image = new CRawImage(320,240);
+    
+    // Initial values for control   
     pitch = roll = yaw = height = 0.0;
     joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
 
-	// Destination OpenCV Mat	
-	//Mat currentImage = Mat(240, 320, CV_8UC3);
-	// Show it	
-	Mat currentImage;  //Sustituye a la imagen del drone por la de la lap N
-	camera >> currentImage;
-	imshow("ParrotCam", currentImage); //Muestra la primera imagen N
-	Mat flippedImage; //Mat de flipped N
+    // Destination OpenCV Mat   
+    Mat currentImage = Mat(240, 320, CV_8UC3);
+
+    // TESTING ONLY
+    /* Create images where captured and transformed frames are going to be stored */
+    Mat currentImageWC;
+    Mat flippedImageWC;
+    Mat im_gray;
+    Mat img_bw;
+
+    // Show it  
+    imshow("ParrotCam", currentImage);
 
     // Initialize joystick
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
     useJoystick = SDL_NumJoysticks() > 0;
+
     if (useJoystick)
     {
         SDL_JoystickClose(m_joystick);
@@ -127,6 +141,32 @@ int main(int argc,char* argv[])
 
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
+
+    /* Create main OpenCV window to attach callbacks */  // TESTING ONLY
+    namedWindow("ImageWC");
+    setMouseCallback("ImageWC", mouseCoordinatesExampleCallback);
+
+    while (!clicked){
+        char c = waitKey(5);
+
+        if (c == 'b'){
+            clicked = true;
+        }
+
+        //image is captured
+        heli->renewImage(image);
+
+        /* Obtain a new frame from camera */ //TESTING ONLY 
+        webcam >> currentImageWC;
+
+        rawToMat(currentImage, image);
+        imshow("ParrotCam", currentImage);
+        imagenClick=currentImage;
+
+        /* Show image */
+        imshow("Click", imagenClick);
+        imshow("ImageWC", currentImageWC);
+    }
 
     while (stop == false)
     {
@@ -163,63 +203,80 @@ int main(int argc,char* argv[])
         fprintf(stdout, "  Land    : %d \n", joypadLand);
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
-        
-	   cout<<"Prueba Luis"<<endl;
-	
-		//image is captured
-		heli->renewImage(image);
-		camera >> currentImage; //Renueva la imagen tomada desde la lap N
 
-		// Copy to OpenCV Mat
-		rawToMat(currentImage, image);
-		imshow("ParrotCam", currentImage);
-        	flipImageBasic(currentImage, flippedImage); // Flipped image N
-                imshow("Flipped", flippedImage); // Mostrar imagen "flipped"
-		imagenClick=currentImage;
-        	//imshow("Click", imagenClick);
+        /* Call custom flipping routine. From OpenCV, you could call flip(currentImage, flippedImage, 1) */
+        flipImageBasic(currentImageWC, flippedImageWC);
+        imshow("Flipped", flippedImageWC);
 
-		//Click en pantalla codigo -----------------------------------------------------------------
-		/* Draw all points */
-		for (int i = 0; i < points.size(); ++i) { //Loop para dibujar constantemente los circulos y lineas
-			circle(imagenClick, (Point)points[i],5 , Scalar( 0, 0, 255 ), CV_FILLED); //Dibuja círculos
-			if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
-                        	line(imagenClick, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
-			}
-		}
-		/* Show image */
-		imshow("Click", imagenClick);
-		//FINAL CLICK EN PANTALLA
+        cvtColor(currentImageWC,im_gray,CV_RGB2GRAY);
+        imshow("Gray", im_gray);
+
+        img_bw = im_gray > 128;
+        imshow("BIN", img_bw);
+
+        // Copy to OpenCV Mat
+        rawToMat(currentImage, image);
+        imshow("ParrotCam", currentImage);
+        imagenClick=currentImage;
+        //imshow("Click", imagenClick);
+        //imshow("ImageWC", currentImageWC);
+
+        if (currentImage.data) 
+        {
+            /* Draw all points */
+            for (int i = 0; i < points.size(); ++i) {
+                circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
+                circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
+                /*if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
+                    line(imagenClick, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
+                }*/
+            }
+
+            /* Show image */
+            imshow("Click", imagenClick);
+            imshow("ImageWC", currentImageWC);
+        }
+        else
+        {
+            cout << "No image data.. " << endl;
+        }
+
 
         char key = waitKey(5);
-		switch (key) {
-			case 'a': yaw = -20000.0; break;
-			case 'd': yaw = 20000.0; break;
-			case 'w': height = -20000.0; break;
-			case 's': height = 20000.0; break;
-			case 'q': heli->takeoff(); break;
-			case 'e': heli->land(); break;
-			case 'z': heli->switchCamera(0); break;
-			case 'x': heli->switchCamera(1); break;
-			case 'c': heli->switchCamera(2); break;
-			case 'v': heli->switchCamera(3); break;
-			case 'j': roll = -20000.0; break;
-			case 'l': roll = 20000.0; break;
-			case 'i': pitch = -20000.0; break;
-			case 'k': pitch = 20000.0; break;
+
+        switch (key) 
+        {
+            case 'a': yaw = -20000.0; break;
+            case 'd': yaw = 20000.0; break;
+            case 'w': height = -20000.0; break;
+            case 's': height = 20000.0; break;
+            case 'q': heli->takeoff(); break;
+            case 'e': heli->land(); break;
+            case 'z': heli->switchCamera(0); break;
+            case 'x': heli->switchCamera(1); break;
+            case 'c': heli->switchCamera(2); break;
+            case 'v': heli->switchCamera(3); break;
+            case 'j': roll = -20000.0; break;
+            case 'l': roll = 20000.0; break;
+            case 'i': pitch = -20000.0; break;
+            case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
-		}
+        }
 
-        if (joypadTakeOff) {
+        if (joypadTakeOff) 
+        {
             heli->takeoff();
         }
-        if (joypadLand) {
+        
+        if (joypadLand) 
+        {
             heli->land();
         }
-        //hover = joypadHover ? 1 : 0;
+            //hover = joypadHover ? 1 : 0;
 
-        //setting the drone angles
+            //setting the drone angles
         if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
         {
             heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
@@ -232,12 +289,11 @@ int main(int argc,char* argv[])
         }
 
         usleep(15000);
-	}
-	
-	heli->land();
+    }
+
+    heli->land();
     SDL_JoystickClose(m_joystick);
     delete heli;
-	delete image;
-	return 0;
+    delete image;
+    return 0;
 }
-
