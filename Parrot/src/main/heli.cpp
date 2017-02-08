@@ -35,8 +35,10 @@ int vR;
 int vG;
 int vB;
 
-Mat imagenClick;
+int Pxn, Pyn;
 
+Mat imagenClick;
+vector<Point> points; // Necesario para click en pantalla circle(...)
 // Convert CRawImage to Mat
 void rawToMat( Mat &destImage, CRawImage* sourceImage)
 {	
@@ -49,6 +51,22 @@ void rawToMat( Mat &destImage, CRawImage* sourceImage)
 		pointerImage[3*i+2] = sourceImage->data[3*i];
 	}
 }
+//Flip Original
+void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
+{
+	if (destinationImage.empty())
+		destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+
+	for (int y = 0; y < sourceImage.rows; ++y)
+		for (int x = 0; x < sourceImage.cols / 2; ++x)
+			for (int i = 0; i < sourceImage.channels(); ++i)
+			{
+				destinationImage.at<Vec3b>(y, x)[i] = sourceImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i];
+				destinationImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i] = sourceImage.at<Vec3b>(y, x)[i];
+			}
+}
+
+
 
 //codigo del click en pantalla
 void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* param)
@@ -63,6 +81,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
             vB=destination[Px * 3];
             vG=destination[Px*3+1];
             vR=destination[Px*3+2];
+	    points.push_back(Point(x, y));
             break;
         case CV_EVENT_MOUSEMOVE:
             break;
@@ -90,9 +109,12 @@ int main(int argc,char* argv[])
     joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
 
 	// Destination OpenCV Mat	
-	Mat currentImage = Mat(240, 320, CV_8UC3);
+	//Mat currentImage = Mat(240, 320, CV_8UC3);
 	// Show it	
-	imshow("ParrotCam", currentImage);
+	Mat currentImage;  //Sustituye a la imagen del drone por la de la lap N
+	camera >> currentImage;
+	imshow("ParrotCam", currentImage); //Muestra la primera imagen N
+	Mat flippedImage; //Mat de flipped N
 
     // Initialize joystick
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
@@ -146,12 +168,29 @@ int main(int argc,char* argv[])
 	
 		//image is captured
 		heli->renewImage(image);
+		camera >> currentImage; //Renueva la imagen tomada desde la lap N
 
 		// Copy to OpenCV Mat
 		rawToMat(currentImage, image);
 		imshow("ParrotCam", currentImage);
-        imagenClick=currentImage;
-        imshow("Click", imagenClick);
+        	flipImageBasic(currentImage, flippedImage); // Flipped image N
+                imshow("Flipped", flippedImage); // Mostrar imagen "flipped"
+		imagenClick=currentImage;
+        	//imshow("Click", imagenClick);
+
+		//Click en pantalla codigo -----------------------------------------------------------------
+		/* Draw all points */
+		for (int i = 0; i < points.size(); ++i) {
+			circle(imagenClick, (Point)points[i],5 , Scalar( 0, 0, 255 ), CV_FILLED);
+			if((points.size() > 1) &&(i != 0)){
+                        	line(imagenClick, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0);
+			}
+		}
+		Pxn=Px;
+                Pyn=Py;
+		/* Show image */
+		imshow("Click", imagenClick);
+		//FINAL CLICK EN PANTALLA
 
         char key = waitKey(5);
 		switch (key) {
