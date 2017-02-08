@@ -37,9 +37,50 @@ int vG;
 int vB;
 
 Mat imagenClick;
+// Destination OpenCV Mat   
+Mat currentImage = Mat(240, 320, CV_8UC3);
+//Mat flippedImage = Mat(240, 320, CV_8UC3);
+//Mat grayImage = Mat(240, 320, CV_8UC3);
+//Mat binaryImage = Mat(240, 320, CV_8UC3);
+
+// TESTING ONLY
+/* Create images where captured and transformed frames are going to be stored */
+Mat currentImageWC;
+Mat flippedImageWC;
+Mat grayImageWC;
+Mat binaryImageWC;
+Mat HSVImageWC;
+
+bool clicked = false;
 
 // Here we will store points *CLICK*
 vector<Point> points;
+
+
+//BINARY 
+int threshold_value = 0;
+int threshold_type = 3;;
+int const max_value = 255;
+int const max_type = 4;
+int const max_BINARY_value = 255;
+
+char* window_name = "Binary";
+char* trackbar_type = "Type: \n 0: Binary \n 1: Binary Inverted \n 2: Truncate \n 3: To Zero \n 4: To Zero Inverted";
+char* trackbar_value = "Value";
+
+void Threshold_Demo( int, void* )
+{
+  /* 0: Binary
+     1: Binary Inverted
+     2: Threshold Truncated
+     3: Threshold to Zero
+     4: Threshold to Zero Inverted
+   */
+
+  threshold(grayImageWC, binaryImageWC, threshold_value, max_BINARY_value,threshold_type );
+
+  imshow( window_name, binaryImageWC);
+}
 
 // Convert CRawImage to Mat
 void rawToMat( Mat &destImage, CRawImage* sourceImage)
@@ -74,6 +115,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
         case CV_EVENT_LBUTTONUP:
         break;
         case CV_EVENT_RBUTTONDOWN:
+        clicked = true;
         //flag=!flag;
         break;
         
@@ -100,8 +142,6 @@ void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
 
 int main(int argc,char* argv[])
 {
-    bool clicked = false;
-
     /* First, open camera device */    //TESTING ONLY
     VideoCapture webcam;
     webcam.open(0);
@@ -116,19 +156,6 @@ int main(int argc,char* argv[])
     pitch = roll = yaw = height = 0.0;
     joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
 
-    // Destination OpenCV Mat   
-    Mat currentImage = Mat(240, 320, CV_8UC3);
-
-    // TESTING ONLY
-    /* Create images where captured and transformed frames are going to be stored */
-    Mat currentImageWC;
-    Mat flippedImageWC;
-    Mat im_gray;
-    Mat img_bw;
-
-    // Show it  
-    imshow("ParrotCam", currentImage);
-
     // Initialize joystick
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
     useJoystick = SDL_NumJoysticks() > 0;
@@ -139,6 +166,9 @@ int main(int argc,char* argv[])
         m_joystick = SDL_JoystickOpen(0);
     }
 
+    // Show it  
+    imshow("ParrotCam", currentImage);
+
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
 
@@ -147,11 +177,7 @@ int main(int argc,char* argv[])
     setMouseCallback("ImageWC", mouseCoordinatesExampleCallback);
 
     while (!clicked){
-        char c = waitKey(5);
-
-        if (c == 'b'){
-            clicked = true;
-        }
+        waitKey(5);
 
         //image is captured
         heli->renewImage(image);
@@ -207,12 +233,38 @@ int main(int argc,char* argv[])
         /* Call custom flipping routine. From OpenCV, you could call flip(currentImage, flippedImage, 1) */
         flipImageBasic(currentImageWC, flippedImageWC);
         imshow("Flipped", flippedImageWC);
+        //flipImageBasic(currentImage, flippedImage);
+        //imshow("Flipped", flippedImage);
 
-        cvtColor(currentImageWC,im_gray,CV_RGB2GRAY);
-        imshow("Gray", im_gray);
+        cvtColor(currentImageWC,grayImageWC,CV_RGB2GRAY);
+        imshow("Gray", grayImageWC);
+        //cvtColor(currentImage,grayImage,CV_RGB2GRAY);
+        //imshow("Gray", grayImage);
 
-        img_bw = im_gray > 128;
-        imshow("BIN", img_bw);
+        //BINARY
+        binaryImageWC = grayImageWC > 128;
+        imshow("BIN", binaryImageWC);
+
+        /// Create a window to display results
+        namedWindow(window_name, CV_WINDOW_AUTOSIZE);
+
+        /// Create Trackbar to choose type of Threshold
+        createTrackbar( trackbar_type,
+                        window_name, &threshold_type,
+                        max_type, Threshold_Demo );
+
+        createTrackbar( trackbar_value,
+                        window_name, &threshold_value,
+                        max_value, Threshold_Demo );
+
+        /// Call the function to initialize
+        Threshold_Demo(0, 0);
+
+        //HSV
+        cvtColor(currentImageWC, HSVImageWC, CV_RGB2HSV);
+        imshow("HSV", HSVImageWC);
+
+        //YIQ
 
         // Copy to OpenCV Mat
         rawToMat(currentImage, image);
@@ -297,3 +349,4 @@ int main(int argc,char* argv[])
     delete image;
     return 0;
 }
+
