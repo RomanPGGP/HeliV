@@ -24,11 +24,11 @@ int joypadYaw = 0;
 // ---------------------------------------------------- Matrices to store the image
 Mat clickedImage;  
 Mat currentImage = Mat(240, 320, CV_8UC3);
-Mat flippedImage = Mat(240, 320, CV_8UC3);
-Mat grayImage = Mat(240, 320, CV_8UC3);
-Mat binaryImage = Mat(240, 320, CV_8UC3);
-Mat YIQImage = Mat(240, 320, CV_8UC3);
-Mat HSVImage = Mat(240, 320, CV_8UC3);
+Mat flippedImage;
+Mat grayImage;
+Mat binaryImage;
+Mat YIQImage;
+Mat HSVImage;
 
 // -- TESTING ONLY
 Mat currentImageWC;
@@ -252,18 +252,25 @@ int main(int argc,char* argv[])
     //-- While user doesn't click in image, keep streaming
     while (!clicked){
         waitKey(5);
+
         heli->renewImage(image);
         //webcam >> currentImageWC;                   //-- T*
+        
         rawToMat(currentImage, image);
-        clickedImage = currentImage;
         imshow("ParrotCam", currentImage);
+
+        clickedImage = currentImage;
+        
         imshow("Click", clickedImage);
-        imshow("ImageWC", currentImageWC);
+        //imshow("ImageWC", currentImageWC);
+
     }
 
     while (stop == false)
     {
         printf("\033[2J\033[1;1H");                 //-- Clear the console
+
+        cout << "useJOystick" << endl;
 
         if (useJoystick)
         {
@@ -325,6 +332,7 @@ int main(int argc,char* argv[])
                         max_value, Threshold_Demo );
 
         Threshold_Demo(0, 0);                               //-- Call the function to initialize
+        
 
         //-- HSV
         //cvtColor(currentImageWC, HSVImageWC, CV_RGB2HSV);   //-- T*
@@ -355,14 +363,14 @@ int main(int argc,char* argv[])
             for (int i = 0; i < points.size(); ++i) {
                 circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
                 circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
-                /*if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
+                if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
                     line(clickedImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
-                }*/
+                }
             }
 
             /* Show image */
             imshow("Click", clickedImage);
-            imshow("ImageWC", currentImageWC);
+            //imshow("ImageWC", currentImageWC);
         }
         else
         {
