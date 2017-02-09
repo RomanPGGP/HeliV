@@ -1,14 +1,7 @@
-//JULIETTE Prueba
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include "SDL/SDL.h"
-/*
- * A simple 'getting started' interface to the ARDrone, v0.2 
- * author: Tom Krajnik
- * The code is straightforward,
- * check out the CHeli class and main() to see 
- */
 #include <stdlib.h>
 #include "CHeli.h"
 #include <unistd.h>
@@ -18,57 +11,60 @@
 using namespace std;
 using namespace cv;
 
-bool stop = false;
-CRawImage *image;
-CHeli *heli;
-float pitch, roll, yaw, height;
-int hover=0;
-
-// Joystick related
+// ---------------------------------------------------- Joystick related
 SDL_Joystick* m_joystick;
 bool useJoystick;
-int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
-string ultimo = "init";
+int joypadRoll = 0; 
+int joypadPitch = 0; 
+int joypadVerticalSpeed = 0; 
+int joypadYaw = 0;
+// ----------------------------------------------------
+
+// ---------------------------------------------------- Matrices to store the image
+Mat clickedImage;  
+Mat currentImage = Mat(240, 320, CV_8UC3);
+//Mat flippedImage = Mat(240, 320, CV_8UC3);
+//Mat grayImage = Mat(240, 320, CV_8UC3);
+//Mat binaryImage = Mat(240, 320, CV_8UC3);
+
+// -- TESTING ONLY
+Mat currentImageWC;
+Mat flippedImageWC;
+Mat grayImageWC;
+Mat binaryImageWC;
+Mat HSVImageWC;
+Mat YIQImageWC;
+// ----------------------------------------------------
+
+// ---------------------------------------------------- Binary Related
+int const max_value = 255;
+int const max_type = 4;
+int const max_BINARY_value = 255;
+int threshold_value = 0;
+int threshold_type = 3;
+
+char* binaryWindowName = "Binary";
+char* trackbar_type = "Type: \n 0: Binary \n 1: Binary Inverted \n 2: Truncate \n 3: To Zero \n 4: To Zero Inverted";
+char* trackbar_value = "Value";
+// ----------------------------------------------------
+
+CRawImage *image;
+CHeli *heli;
+vector<Point> points;               //-- Here we will store points *CLICK*
+bool stop = false;                  //-- Stops program
+bool clicked = false;               //-- Freezes stream
+float pitch = 0.0;
+float roll = 0.0;
+float yaw = 0.0;
+float height = 0.0;
+int hover = 0;
 
 int Px;
 int Py;
 int vR;
 int vG;
 int vB;
-
-Mat imagenClick;
-// Destination OpenCV Mat   
-Mat currentImage = Mat(240, 320, CV_8UC3);
-//Mat flippedImage = Mat(240, 320, CV_8UC3);
-//Mat grayImage = Mat(240, 320, CV_8UC3);
-//Mat binaryImage = Mat(240, 320, CV_8UC3);
-
-// TESTING ONLY
-/* Create images where captured and transformed frames are going to be stored */
-Mat currentImageWC;
-Mat flippedImageWC;
-Mat grayImageWC;
-Mat binaryImageWC;
-Mat HSVImageWC;
-Mat YIQImageWC; //creado por Ju
-
-bool clicked = false;
-
-// Here we will store points *CLICK*
-vector<Point> points;
-
-
-//BINARY 
-int threshold_value = 0;
-int threshold_type = 3;;
-int const max_value = 255;
-int const max_type = 4;
-int const max_BINARY_value = 255;
-
-char* window_name = "Binary";
-char* trackbar_type = "Type: \n 0: Binary \n 1: Binary Inverted \n 2: Truncate \n 3: To Zero \n 4: To Zero Inverted";
-char* trackbar_value = "Value";
 
 void Threshold_Demo( int, void* )
 {
@@ -80,38 +76,39 @@ void Threshold_Demo( int, void* )
    */
 
   threshold(grayImageWC, binaryImageWC, threshold_value, max_BINARY_value,threshold_type );
-
-  imshow( window_name, binaryImageWC);
+  imshow( binaryWindowName, binaryImageWC);
 }
 
 //Convert RGB to YIQ (Ju)
 void convert2YIQ(const Mat &sourceImage, Mat &destinationImage)
 {
-        int Y;
-        int I;
-        int Q;
-        int R;
-        int G;
-        int B;
+    int Y;
+    int I;
+    int Q;
+    int R;
+    int G;
+    int B;
 
-        if (destinationImage.empty())
-                destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+    if (destinationImage.empty())
+        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
 
-        for (int y = 0; y < sourceImage.rows; ++y)//Recorre las lineas
-                for (int x = 0; x < sourceImage.cols; ++x)//Recorrer las columnas
-		{
-                            B = sourceImage.at<Vec3b>(y, x)[1];//Channel B
-                            G = sourceImage.at<Vec3b>(y, x)[2];//Channel G
-                            R = sourceImage.at<Vec3b>(y, x)[3];//Channel R
-                            //Conversion from RGB to YIQ
-                            Y = 0.299*R + 0.587*G + 0.114*B;
-                            I = 0.596*R - 0.275*G - 0.321*B;
-                            Q = 0.212*R - 0.523*G + 0.311*B;
-                            //Changing the channel value to the YIQ world
-                            destinationImage.at<Vec3b>(y, x)[1] = Y;
-                            destinationImage.at<Vec3b>(y, x)[2] = I;
-                   	    destinationImage.at<Vec3b>(y, x)[3] = Q;
-		}
+    for (int y = 0; y < sourceImage.rows; ++y)      
+        for (int x = 0; x < sourceImage.cols; ++x)  
+        {
+            B = sourceImage.at<Vec3b>(y, x)[1];
+            G = sourceImage.at<Vec3b>(y, x)[2];
+            R = sourceImage.at<Vec3b>(y, x)[3];
+            
+            //Conversion from RGB to YIQ
+            Y = 0.299*R + 0.587*G + 0.114*B;
+            I = 0.596*R - 0.275*G - 0.321*B;
+            Q = 0.212*R - 0.523*G + 0.311*B;
+            
+            //Changing the channel value to the YIQ world
+            destinationImage.at<Vec3b>(y, x)[1] = Y;
+            destinationImage.at<Vec3b>(y, x)[2] = I;
+            destinationImage.at<Vec3b>(y, x)[3] = Q;
+        }
 }
 
 
@@ -128,28 +125,22 @@ void rawToMat( Mat &destImage, CRawImage* sourceImage)
     }
 }
 
-//codigo del click en pantalla
 void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* param)
 {
     uchar* destination;
     switch (event)
     {
         case CV_EVENT_LBUTTONDOWN:
-        Px=x;
-        Py=y;
-        destination = (uchar*) imagenClick.ptr<uchar>(Py);
-        vB=destination[Px * 3];
-        vG=destination[Px*3+1];
-        vR=destination[Px*3+2];
-        points.push_back(Point(x, y));
-        break;
-        case CV_EVENT_MOUSEMOVE:
-        break;
-        case CV_EVENT_LBUTTONUP:
+            Px=x;
+            Py=y;
+            destination = (uchar*) clickedImage.ptr<uchar>(Py);
+            vB=destination[Px * 3];
+            vG=destination[Px*3+1];
+            vR=destination[Px*3+2];
+            points.push_back(Point(x, y));
         break;
         case CV_EVENT_RBUTTONDOWN:
-        clicked = true;
-        //flag=!flag;
+            clicked = true;
         break;
         
     }
@@ -175,22 +166,12 @@ void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
 
 int main(int argc,char* argv[])
 {
-    /* First, open camera device */    //TESTING ONLY
-    VideoCapture webcam;
-    webcam.open(0);
+    VideoCapture webcam;                            //-- T*
+    webcam.open(0);                                 //-- T*
 
-    //establishing connection with the quadcopter
-    heli = new CHeli();
-    
-    //this class holds the image from the drone 
-    image = new CRawImage(320,240);
-    
-    // Initial values for control   
-    pitch = roll = yaw = height = 0.0;
-    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
-
-    // Initialize joystick
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+    heli = new CHeli();                             //-- Establishing connection with the quadcopter 
+    image = new CRawImage(320,240);                 //-- Holds the image from the drone
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);   //-- Initialize joystick
     useJoystick = SDL_NumJoysticks() > 0;
 
     if (useJoystick)
@@ -198,40 +179,30 @@ int main(int argc,char* argv[])
         SDL_JoystickClose(m_joystick);
         m_joystick = SDL_JoystickOpen(0);
     }
-
-    // Show it  
+  
     imshow("ParrotCam", currentImage);
 
+    //-- Create main OpenCV window to attach callbacks
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
+    namedWindow("ImageWC");                                         //-- T*
+    setMouseCallback("ImageWC", mouseCoordinatesExampleCallback);   //-- T*
 
-    /* Create main OpenCV window to attach callbacks */  // TESTING ONLY
-    namedWindow("ImageWC");
-    setMouseCallback("ImageWC", mouseCoordinatesExampleCallback);
-
+    //-- While user doesn't click in image, keep streaming
     while (!clicked){
         waitKey(5);
-
-        //image is captured
         heli->renewImage(image);
-
-        /* Obtain a new frame from camera */ //TESTING ONLY 
-        webcam >> currentImageWC;
-
+        webcam >> currentImageWC;                   //-- T*
         rawToMat(currentImage, image);
+        clickedImage = currentImage;
         imshow("ParrotCam", currentImage);
-        imagenClick=currentImage;
-
-        /* Show image */
-        imshow("Click", imagenClick);
+        imshow("Click", clickedImage);
         imshow("ImageWC", currentImageWC);
     }
 
     while (stop == false)
     {
-
-        // Clear the console
-        printf("\033[2J\033[1;1H");
+        printf("\033[2J\033[1;1H");                 //-- Clear the console
 
         if (useJoystick)
         {
@@ -247,7 +218,7 @@ int main(int argc,char* argv[])
             joypadHover = SDL_JoystickGetButton(m_joystick, 0);
         }
 
-        // prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
+        //-- Prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
         printf("===================== Parrot Basic Example =====================\n\n");
         fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
         fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
@@ -263,51 +234,53 @@ int main(int argc,char* argv[])
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
 
-        /* Call custom flipping routine. From OpenCV, you could call flip(currentImage, flippedImage, 1) */
-        flipImageBasic(currentImageWC, flippedImageWC);
-        imshow("Flipped", flippedImageWC);
-        //flipImageBasic(currentImage, flippedImage);
-        //imshow("Flipped", flippedImage);
+        //-- Flip image
+        flipImageBasic(currentImageWC, flippedImageWC);     //-- T*
+        imshow("Flipped", flippedImageWC);                  //-- T*
+        //flipImageBasic(currentImage, flippedImage);       
+        //imshow("Flipped", flippedImage);                  
 
-        cvtColor(currentImageWC,grayImageWC,CV_RGB2GRAY);
-        imshow("Gray", grayImageWC);
-        //cvtColor(currentImage,grayImage,CV_RGB2GRAY);
-        //imshow("Gray", grayImage);
+        //-- Gray image
+        cvtColor(currentImageWC,grayImageWC,CV_RGB2GRAY);   //-- T*
+        imshow("Gray", grayImageWC);                        //-- T*
+        //cvtColor(currentImage,grayImage,CV_RGB2GRAY);     
+        //imshow("Gray", grayImage);                        
 
-        //BINARY
-        binaryImageWC = grayImageWC > 128;
-        imshow("BIN", binaryImageWC);
+        //-- Binary image
+        binaryImageWC = grayImageWC > 128;                  //-- T*
+        imshow("BIN", binaryImageWC);                       //-- T*
+        //binaryImage = grayImage > 128;                      
+        //imshow("BIN", binaryImage);                       
 
-        /// Create a window to display results
-        namedWindow(window_name, CV_WINDOW_AUTOSIZE);
-
-        /// Create Trackbar to choose type of Threshold
+        //-- Binary image alternative
+        namedWindow(binaryWindowName, CV_WINDOW_AUTOSIZE);  //-- Create window
+        //-- Create Trackbar to choose type of Threshold
         createTrackbar( trackbar_type,
-                        window_name, &threshold_type,
+                        binaryWindowName, &threshold_type,
                         max_type, Threshold_Demo );
 
         createTrackbar( trackbar_value,
-                        window_name, &threshold_value,
+                        binaryWindowName, &threshold_value,
                         max_value, Threshold_Demo );
 
-        /// Call the function to initialize
-        Threshold_Demo(0, 0);
+        Threshold_Demo(0, 0);                               //-- Call the function to initialize
 
-        //HSV
-        cvtColor(currentImageWC, HSVImageWC, CV_RGB2HSV);
-        imshow("HSV", HSVImageWC);
+        //-- HSV
+        cvtColor(currentImageWC, HSVImageWC, CV_RGB2HSV);   //-- T*
+        imshow("HSV", HSVImageWC);                          //-- T*
+        cvtColor(currentImage, HSVImage, CV_RGB2HSV);
+        imshow("HSV", HSVImage);
 
-        //YIQ
-	convert2YIQ(currentImageWC, YIQImageWC);
-	imshow("YIQ", YIQImageWC);
+        //-- YIQ
+        convert2YIQ(currentImageWC, YIQImageWC);            //-- T*
+        imshow("YIQ", YIQImageWC);                          //-- T*
+        convert2YIQ(currentImage, YIQImage);
+        imshow("YIQ", YIQImage);
 
-        // Copy to OpenCV Mat
         rawToMat(currentImage, image);
         imshow("ParrotCam", currentImage);
-        imagenClick=currentImage;
-        //imshow("Click", imagenClick);
-        //imshow("ImageWC", currentImageWC);
-
+        clickedImage = currentImage;
+        
         if (currentImage.data) 
         {
             /* Draw all points */
@@ -315,12 +288,12 @@ int main(int argc,char* argv[])
                 circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
                 circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
                 /*if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
-                    line(imagenClick, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
+                    line(clickedImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
                 }*/
             }
 
             /* Show image */
-            imshow("Click", imagenClick);
+            imshow("Click", clickedImage);
             imshow("ImageWC", currentImageWC);
         }
         else
