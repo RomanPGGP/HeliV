@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-//JULIETTE
->>>>>>> 7d5ce3ca2491b659eef6bd8313e405e35c73ead5
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -28,9 +24,11 @@ int joypadYaw = 0;
 // ---------------------------------------------------- Matrices to store the image
 Mat clickedImage;  
 Mat currentImage = Mat(240, 320, CV_8UC3);
-//Mat flippedImage = Mat(240, 320, CV_8UC3);
-//Mat grayImage = Mat(240, 320, CV_8UC3);
-//Mat binaryImage = Mat(240, 320, CV_8UC3);
+Mat flippedImage = Mat(240, 320, CV_8UC3);
+Mat grayImage = Mat(240, 320, CV_8UC3);
+Mat binaryImage = Mat(240, 320, CV_8UC3);
+Mat YIQImage = Mat(240, 320, CV_8UC3);
+Mat HSVImage = Mat(240, 320, CV_8UC3);
 
 // -- TESTING ONLY
 Mat currentImageWC;
@@ -79,8 +77,8 @@ void Threshold_Demo( int, void* )
      4: Threshold to Zero Inverted
    */
 
-  threshold(grayImageWC, binaryImageWC, threshold_value, max_BINARY_value,threshold_type );
-  imshow( binaryWindowName, binaryImageWC);
+  threshold(grayImage, binaryImage, threshold_value, max_BINARY_value,threshold_type );
+  imshow(binaryWindowName, binaryImage);
 }
 
 //Convert RGB to YIQ (Ju)
@@ -229,8 +227,8 @@ void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
 
 int main(int argc,char* argv[])
 {
-    VideoCapture webcam;                            //-- T*
-    webcam.open(0);                                 //-- T*
+    //VideoCapture webcam;                            //-- T*
+    //webcam.open(0);                                 //-- T*
 
     heli = new CHeli();                             //-- Establishing connection with the quadcopter 
     image = new CRawImage(320,240);                 //-- Holds the image from the drone
@@ -248,14 +246,14 @@ int main(int argc,char* argv[])
     //-- Create main OpenCV window to attach callbacks
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
-    namedWindow("ImageWC");                                         //-- T*
-    setMouseCallback("ImageWC", mouseCoordinatesExampleCallback);   //-- T*
+    //namedWindow("ImageWC");                                         //-- T*
+    //setMouseCallback("ImageWC", mouseCoordinatesExampleCallback);   //-- T*
 
     //-- While user doesn't click in image, keep streaming
     while (!clicked){
         waitKey(5);
         heli->renewImage(image);
-        webcam >> currentImageWC;                   //-- T*
+        //webcam >> currentImageWC;                   //-- T*
         rawToMat(currentImage, image);
         clickedImage = currentImage;
         imshow("ParrotCam", currentImage);
@@ -298,22 +296,22 @@ int main(int argc,char* argv[])
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
 
         //-- Flip image
-        flipImageBasic(currentImageWC, flippedImageWC);     //-- T*
-        imshow("Flipped", flippedImageWC);                  //-- T*
-        //flipImageBasic(currentImage, flippedImage);       
-        //imshow("Flipped", flippedImage);                  
+        //flipImageBasic(currentImageWC, flippedImageWC);     //-- T*
+        //imshow("Flipped", flippedImageWC);                  //-- T*
+        flipImageBasic(currentImage, flippedImage);       
+        imshow("Flipped", flippedImage);                  
 
         //-- Gray image
-        cvtColor(currentImageWC,grayImageWC,CV_RGB2GRAY);   //-- T*
-        imshow("Gray", grayImageWC);                        //-- T*
-        //cvtColor(currentImage,grayImage,CV_RGB2GRAY);     
-        //imshow("Gray", grayImage);                        
+        //cvtColor(currentImageWC,grayImageWC,CV_RGB2GRAY);   //-- T*
+        //imshow("Gray", grayImageWC);                        //-- T*
+        cvtColor(currentImage,grayImage,CV_RGB2GRAY);     
+        imshow("Gray", grayImage);                        
 
         //-- Binary image
-        binaryImageWC = grayImageWC > 128;                  //-- T*
-        imshow("BIN", binaryImageWC);                       //-- T*
-        //binaryImage = grayImage > 128;                      
-        //imshow("BIN", binaryImage);                       
+        //binaryImageWC = grayImageWC > 128;                  //-- T*
+        //imshow("BIN", binaryImageWC);                       //-- T*
+        binaryImage = grayImage > 128;                      
+        imshow("BIN", binaryImage);                       
 
         //-- Binary image alternative
         namedWindow(binaryWindowName, CV_WINDOW_AUTOSIZE);  //-- Create window
@@ -329,27 +327,24 @@ int main(int argc,char* argv[])
         Threshold_Demo(0, 0);                               //-- Call the function to initialize
 
         //-- HSV
-        cvtColor(currentImageWC, HSVImageWC, CV_RGB2HSV);   //-- T*
-        imshow("HSV", HSVImageWC);                          //-- T*
+        //cvtColor(currentImageWC, HSVImageWC, CV_RGB2HSV);   //-- T*
+        //imshow("HSV", HSVImageWC);                          //-- T*
         cvtColor(currentImage, HSVImage, CV_RGB2HSV);
         imshow("HSV", HSVImage);
 
         //-- YIQ
-        convert2YIQ(currentImageWC, YIQImageWC);            //-- T*
-        imshow("YIQ", YIQImageWC);                          //-- T*
+        //convert2YIQ(currentImageWC, YIQImageWC);            //-- T*
+        //imshow("YIQ", YIQImageWC);                          //-- T*
         convert2YIQ(currentImage, YIQImage);
         imshow("YIQ", YIQImage);
 
-<<<<<<< HEAD
-=======
-	//Histogram
-	if( histogram(currentImageWC)==-1)
-		cout << "No image data.. " <<endl;
-	else
-	        histogram(currentImageWC);
+    	//Histogram
+    	if( histogram(currentImage)==-1)
+    		cout << "No image data.. " <<endl;
+    	else
+    	   histogram(currentImageWC);
         
         // Copy to OpenCV Mat
->>>>>>> 7d5ce3ca2491b659eef6bd8313e405e35c73ead5
         rawToMat(currentImage, image);
         imshow("ParrotCam", currentImage);
         clickedImage = currentImage;
