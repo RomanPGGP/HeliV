@@ -230,6 +230,10 @@ int main(int argc,char* argv[])
     VideoCapture webcam;                            //-- T*
     webcam.open(0);                                 //-- T*
 
+    heli = new CHeli();  
+    image = new CRawImage(320,240);                 //-- Holds the image from the drone
+    
+
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);   //-- Initialize joystick
     useJoystick = SDL_NumJoysticks() > 0;
 
@@ -245,6 +249,8 @@ int main(int argc,char* argv[])
     //-- While user doesn't click in image, keep streaming
     while (!clicked){
         waitKey(5);
+
+        heli->renewImage(image);
 
         webcam >> currentImageWC;                   //-- T*
         
@@ -329,15 +335,10 @@ int main(int argc,char* argv[])
             /* Draw all points */
             for (int i = 0; i < points.size(); ++i) {
                 circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);        //--T*
-               // circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
-                if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
-                    //line(clickedImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
+               if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
                     line(currentImageWC, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
                 }
             }
-
-            /* Show image */
-            //imshow("Click", clickedImage);
             imshow("ImageWC", currentImageWC);              //--T*
         }
         else
