@@ -41,13 +41,11 @@ Mat YIQImageWC;
 
 // ---------------------------------------------------- Binary Related
 int const max_value = 255;
-int const max_type = 4;
 int const max_BINARY_value = 255;
-int threshold_value = 0;
-int threshold_type = 3;
+int threshold_value = 128;
 
 char* binaryWindowName = "Binary";
-char* trackbar_type = "Type: \n 0: Binary \n 1: Binary Inverted \n 2: Truncate \n 3: To Zero \n 4: To Zero Inverted";
+char* trackbar_type = "Type: \n 0: Binary";
 char* trackbar_value = "Value";
 // ----------------------------------------------------
 
@@ -70,15 +68,13 @@ int vB;
 
 void Threshold_Demo( int, void* )
 {
-  /* 0: Binary
-     1: Binary Inverted
-     2: Threshold Truncated
-     3: Threshold to Zero
-     4: Threshold to Zero Inverted
-   */
+    int threshold_type = 0; //Binary
+    //threshold(grayImage, binaryImage, threshold_value, max_BINARY_value,threshold_type );
+    //imshow(binaryWindowName, binaryImage);
 
-  threshold(grayImage, binaryImage, threshold_value, max_BINARY_value,threshold_type );
-  imshow(binaryWindowName, binaryImage);
+    //-- T*
+    threshold(grayImageWC, binaryImageWC, threshold_value, max_BINARY_value,threshold_type);
+    imshow(binaryWindowName, binaryImageWC);
 }
 
 //Convert RGB to YIQ (Ju)
@@ -113,63 +109,79 @@ void convert2YIQ(const Mat &sourceImage, Mat &destinationImage)
         }
 }
 
-//Histogram (creado por Ju)
+//Histogram 
 int histogram(const Mat &sourceImage)
-	{
-	  Mat src, dst;
-	  src = sourceImage;
-	  if( !src.data )
-	    { return -1; }
-
-	  /// Separate the image in 3 places ( B, G and R )
-	  vector<Mat> bgr_planes;
-	  split( src, bgr_planes );
-
-	  /// Establish the number of bins
-	  int histSize = 256;
-
-	  /// Set the ranges ( for B,G,R) )
-	  float range[] = { 0, 256 } ;
-	  const float* histRange = { range };
-
-	  bool uniform = true; bool accumulate = false;
-
-	  Mat b_hist, g_hist, r_hist;
-
-	  /// Compute the histograms:
-	  calcHist( &bgr_planes[0], 1, 0, Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate );
-	  calcHist( &bgr_planes[1], 1, 0, Mat(), g_hist, 1, &histSize, &histRange, uniform, accumulate );
-	  calcHist( &bgr_planes[2], 1, 0, Mat(), r_hist, 1, &histSize, &histRange, uniform, accumulate );
-
-	  // Draw the histograms for B, G and R
-	  int hist_w = 512; int hist_h = 400;
-	  int bin_w = cvRound( (double) hist_w/histSize );
-
-	  Mat histImage( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
-
-	  /// Normalize the result to [ 0, histImage.rows ]
-	  normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
-	  normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
-	  normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
-
-	  /// Draw for each channel
-	  for( int i = 1; i < histSize; i++ )
-	  {
-	      line( histImage, Point( bin_w*(i-1), hist_h - cvRound(b_hist.at<float>(i-1)) ) ,
-                       Point( bin_w*(i), hist_h - cvRound(b_hist.at<float>(i)) ),
-                       Scalar( 255, 0, 0), 2, 8, 0  );
-	      line( histImage, Point( bin_w*(i-1), hist_h - cvRound(g_hist.at<float>(i-1)) ) ,
-                       Point( bin_w*(i), hist_h - cvRound(g_hist.at<float>(i)) ),
-                       Scalar( 0, 255, 0), 2, 8, 0  );
-	      line( histImage, Point( bin_w*(i-1), hist_h - cvRound(r_hist.at<float>(i-1)) ) ,
-                       Point( bin_w*(i), hist_h - cvRound(r_hist.at<float>(i)) ),
-                       Scalar( 0, 0, 255), 2, 8, 0  );
-	  }
-	/// Display
-	  namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
-	  imshow("calcHist Demo", histImage );
+{
+    Mat src, dst;
 	
-	return 0;
+    src = sourceImage;
+
+	if( !src.data )
+    { 
+        return -1; 
+    }
+
+    /// Separate the image in 3 places ( B, G and R )
+    vector<Mat> bgr_planes;
+    split( src, bgr_planes );
+
+    /// Establish the number of bins
+    int histSize = 256;
+
+    /// Set the ranges ( for B,G,R )
+    float range[] = { 0, 256 } ;
+    const float* histRange = { range };
+
+    bool uniform = true; 
+    bool accumulate = false;
+
+    Mat b_hist, g_hist, r_hist;
+    //Mat hist;
+
+    // Draw the histograms for B, G and R
+    int hist_w = 512; 
+    int hist_h = 400;
+    int bin_w = cvRound( (double) hist_w/histSize );
+
+    /// Compute the histograms:
+    calcHist( &bgr_planes[0], 1, 0, Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate );
+    calcHist( &bgr_planes[1], 1, 0, Mat(), g_hist, 1, &histSize, &histRange, uniform, accumulate );
+    calcHist( &bgr_planes[2], 1, 0, Mat(), r_hist, 1, &histSize, &histRange, uniform, accumulate );
+
+    Mat histImager( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
+    Mat histImageg( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
+    Mat histImageb( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
+
+    /// Normalize the result to [ 0, histImage.rows ]
+    normalize(b_hist, b_hist, 0, histImageb.rows, NORM_MINMAX, -1, Mat() );
+    normalize(g_hist, g_hist, 0, histImageg.rows, NORM_MINMAX, -1, Mat() );
+    normalize(r_hist, r_hist, 0, histImager.rows, NORM_MINMAX, -1, Mat() );
+
+    /// Draw for each channel
+    for( int i = 1; i < histSize; i++ )
+    {
+      line( histImageb, Point( bin_w*(i-1), hist_h - cvRound(b_hist.at<float>(i-1)) ) ,
+                   Point( bin_w*(i), hist_h - cvRound(b_hist.at<float>(i)) ),
+                   Scalar( 255, 0, 0), 2, 8, 0  );
+      line( histImageg, Point( bin_w*(i-1), hist_h - cvRound(g_hist.at<float>(i-1)) ) ,
+                   Point( bin_w*(i), hist_h - cvRound(g_hist.at<float>(i)) ),
+                   Scalar( 0, 255, 0), 2, 8, 0  );
+      line( histImager, Point( bin_w*(i-1), hist_h - cvRound(r_hist.at<float>(i-1)) ) ,
+                   Point( bin_w*(i), hist_h - cvRound(r_hist.at<float>(i)) ),
+                   Scalar( 0, 0, 255), 2, 8, 0  );
+    }
+
+    /// Display
+    namedWindow("calcHist R", CV_WINDOW_AUTOSIZE );
+    imshow("calcHist R", histImager );
+
+    namedWindow("calcHist G", CV_WINDOW_AUTOSIZE );
+    imshow("calcHist G", histImageg );
+
+    namedWindow("calcHist B", CV_WINDOW_AUTOSIZE );
+    imshow("calcHist B", histImageb );
+
+    return 0;
 }
 
 
@@ -227,8 +239,8 @@ void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
 
 int main(int argc,char* argv[])
 {
-    //VideoCapture webcam;                            //-- T*
-    //webcam.open(0);                                 //-- T*
+    VideoCapture webcam;                            //-- T*
+    webcam.open(0);                                 //-- T*
 
     heli = new CHeli();                             //-- Establishing connection with the quadcopter 
     image = new CRawImage(320,240);                 //-- Holds the image from the drone
@@ -246,15 +258,15 @@ int main(int argc,char* argv[])
     //-- Create main OpenCV window to attach callbacks
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
-    //namedWindow("ImageWC");                                         //-- T*
-    //setMouseCallback("ImageWC", mouseCoordinatesExampleCallback);   //-- T*
+    namedWindow("ImageWC");                                         //-- T*
+    setMouseCallback("ImageWC", mouseCoordinatesExampleCallback);   //-- T*
 
     //-- While user doesn't click in image, keep streaming
     while (!clicked){
         waitKey(5);
 
         heli->renewImage(image);
-        //webcam >> currentImageWC;                   //-- T*
+        webcam >> currentImageWC;                   //-- T*
         
         rawToMat(currentImage, image);
         imshow("ParrotCam", currentImage);
@@ -262,7 +274,7 @@ int main(int argc,char* argv[])
         clickedImage = currentImage;
         
         imshow("Click", clickedImage);
-        //imshow("ImageWC", currentImageWC);
+        imshow("ImageWC", currentImageWC);
 
     }
 
@@ -303,74 +315,77 @@ int main(int argc,char* argv[])
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
 
         //-- Flip image
-        //flipImageBasic(currentImageWC, flippedImageWC);     //-- T*
-        //imshow("Flipped", flippedImageWC);                  //-- T*
-        flipImageBasic(currentImage, flippedImage);       
-        imshow("Flipped", flippedImage);                  
+        flipImageBasic(currentImageWC, flippedImageWC);     //-- T*
+        imshow("Flipped", flippedImageWC);                  //-- T*
+        //flipImageBasic(currentImage, flippedImage);       
+        //imshow("Flipped", flippedImage);                  
 
         //-- Gray image
-        //cvtColor(currentImageWC,grayImageWC,CV_RGB2GRAY);   //-- T*
-        //imshow("Gray", grayImageWC);                        //-- T*
-        cvtColor(currentImage,grayImage,CV_RGB2GRAY);     
-        imshow("Gray", grayImage);                        
+        cvtColor(currentImageWC,grayImageWC,CV_RGB2GRAY);   //-- T*
+        imshow("Gray", grayImageWC);                        //-- T*
+        //cvtColor(currentImage,grayImage,CV_RGB2GRAY);     
+        //imshow("Gray", grayImage);                        
 
         //-- Binary image
-        //binaryImageWC = grayImageWC > 128;                  //-- T*
-        //imshow("BIN", binaryImageWC);                       //-- T*
-        binaryImage = grayImage > 128;                      
-        imshow("BIN", binaryImage);                       
+        binaryImageWC = grayImageWC > 128;                  //-- T*
+        imshow("BIN", binaryImageWC);                       //-- T*
+        //binaryImage = grayImage > 128;                      
+        //imshow("BIN", binaryImage);                       
 
         //-- Binary image alternative
         namedWindow(binaryWindowName, CV_WINDOW_AUTOSIZE);  //-- Create window
         //-- Create Trackbar to choose type of Threshold
-        createTrackbar( trackbar_type,
-                        binaryWindowName, &threshold_type,
-                        max_type, Threshold_Demo );
 
         createTrackbar( trackbar_value,
                         binaryWindowName, &threshold_value,
                         max_value, Threshold_Demo );
 
         Threshold_Demo(0, 0);                               //-- Call the function to initialize
-        
 
         //-- HSV
-        //cvtColor(currentImageWC, HSVImageWC, CV_RGB2HSV);   //-- T*
-        //imshow("HSV", HSVImageWC);                          //-- T*
-        cvtColor(currentImage, HSVImage, CV_RGB2HSV);
-        imshow("HSV", HSVImage);
+        cvtColor(currentImageWC, HSVImageWC, CV_RGB2HSV);   //-- T*
+        imshow("HSV", HSVImageWC);                          //-- T*
+        //cvtColor(currentImage, HSVImage, CV_RGB2HSV);
+        //imshow("HSV", HSVImage);
 
         //-- YIQ
-        //convert2YIQ(currentImageWC, YIQImageWC);            //-- T*
-        //imshow("YIQ", YIQImageWC);                          //-- T*
-        convert2YIQ(currentImage, YIQImage);
-        imshow("YIQ", YIQImage);
+        convert2YIQ(currentImageWC, YIQImageWC);            //-- T*
+        imshow("YIQ", YIQImageWC);                          //-- T*
+        //convert2YIQ(currentImage, YIQImage);
+        //imshow("YIQ", YIQImage);
 
     	//Histogram
-    	if( histogram(currentImage)==-1)
+    	/*if(histogram(currentImage)==-1)
     		cout << "No image data.. " <<endl;
     	else
-    	   histogram(currentImageWC);
-        
+    	   histogram(currentImage);*/
+
+                                                            //-- T*
+        if(histogram(currentImageWC)==-1)
+            cout << "No image data.. " <<endl;
+        else
+            histogram(currentImageWC);
+
         // Copy to OpenCV Mat
         rawToMat(currentImage, image);
         imshow("ParrotCam", currentImage);
         clickedImage = currentImage;
         
-        if (currentImage.data) 
+        if (currentImageWC.data) 
         {
             /* Draw all points */
             for (int i = 0; i < points.size(); ++i) {
-                circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
-                circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
+                circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);        //--T*
+               // circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
                 if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
-                    line(clickedImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
+                    //line(clickedImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
+                    line(currentImageWC, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
                 }
             }
 
             /* Show image */
-            imshow("Click", clickedImage);
-            //imshow("ImageWC", currentImageWC);
+            //imshow("Click", clickedImage);
+            imshow("ImageWC", currentImageWC);              //--T*
         }
         else
         {
