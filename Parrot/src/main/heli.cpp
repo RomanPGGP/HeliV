@@ -112,7 +112,7 @@ void convert2YIQ(const Mat &sourceImage, Mat &destinationImage)
 //Histogram 
 int histogram(const Mat &sourceImage)
 {
-    Mat src, dst;
+    Mat src;
 	
     src = sourceImage;
 
