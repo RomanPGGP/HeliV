@@ -29,14 +29,6 @@ Mat grayImage;
 Mat binaryImage;
 Mat YIQImage;
 Mat HSVImage;
-
-// -- TESTING ONLY
-Mat currentImageWC;
-Mat flippedImageWC;
-Mat grayImageWC;
-Mat binaryImageWC;
-Mat HSVImageWC;
-Mat YIQImageWC;
 // ----------------------------------------------------
 
 // ---------------------------------------------------- Binary Related
@@ -69,12 +61,9 @@ int vB;
 void Threshold_Demo( int, void* )
 {
     int threshold_type = 0; //Binary
-    //threshold(grayImage, binaryImage, threshold_value, max_BINARY_value,threshold_type );
-    //imshow(binaryWindowName, binaryImage);
+    threshold(grayImage, binaryImage, threshold_value, max_BINARY_value,threshold_type );
+    imshow(binaryWindowName, binaryImage);
 
-    //-- T*
-    threshold(grayImageWC, binaryImageWC, threshold_value, max_BINARY_value,threshold_type);
-    imshow(binaryWindowName, binaryImageWC);
 }
 
 //Convert RGB to YIQ (Ju)
@@ -239,9 +228,6 @@ void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
 
 int main(int argc,char* argv[])
 {
-    VideoCapture webcam;                            //-- T*
-    webcam.open(0);                                 //-- T*
-
     heli = new CHeli();                             //-- Establishing connection with the quadcopter 
     image = new CRawImage(320,240);                 //-- Holds the image from the drone
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);   //-- Initialize joystick
@@ -258,15 +244,12 @@ int main(int argc,char* argv[])
     //-- Create main OpenCV window to attach callbacks
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
-    namedWindow("ImageWC");                                         //-- T*
-    setMouseCallback("ImageWC", mouseCoordinatesExampleCallback);   //-- T*
 
     //-- While user doesn't click in image, keep streaming
     while (!clicked){
         waitKey(5);
 
         heli->renewImage(image);
-        webcam >> currentImageWC;                   //-- T*
         
         rawToMat(currentImage, image);
         imshow("ParrotCam", currentImage);
@@ -274,7 +257,6 @@ int main(int argc,char* argv[])
         clickedImage = currentImage;
         
         imshow("Click", clickedImage);
-        imshow("ImageWC", currentImageWC);
 
     }
 
@@ -315,22 +297,16 @@ int main(int argc,char* argv[])
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
 
         //-- Flip image
-        flipImageBasic(currentImageWC, flippedImageWC);     //-- T*
-        imshow("Flipped", flippedImageWC);                  //-- T*
-        //flipImageBasic(currentImage, flippedImage);       
-        //imshow("Flipped", flippedImage);                  
+        flipImageBasic(currentImage, flippedImage);       
+        imshow("Flipped", flippedImage);                  
 
         //-- Gray image
-        cvtColor(currentImageWC,grayImageWC,CV_RGB2GRAY);   //-- T*
-        imshow("Gray", grayImageWC);                        //-- T*
-        //cvtColor(currentImage,grayImage,CV_RGB2GRAY);     
-        //imshow("Gray", grayImage);                        
+        cvtColor(currentImage,grayImage,CV_RGB2GRAY);     
+        imshow("Gray", grayImage);                        
 
         //-- Binary image
-        binaryImageWC = grayImageWC > 128;                  //-- T*
-        imshow("BIN", binaryImageWC);                       //-- T*
-        //binaryImage = grayImage > 128;                      
-        //imshow("BIN", binaryImage);                       
+        binaryImage = grayImage > 128;                      
+        imshow("BIN", binaryImage);                       
 
         //-- Binary image alternative
         namedWindow(binaryWindowName, CV_WINDOW_AUTOSIZE);  //-- Create window
@@ -343,49 +319,36 @@ int main(int argc,char* argv[])
         Threshold_Demo(0, 0);                               //-- Call the function to initialize
 
         //-- HSV
-        cvtColor(currentImageWC, HSVImageWC, CV_RGB2HSV);   //-- T*
-        imshow("HSV", HSVImageWC);                          //-- T*
-        //cvtColor(currentImage, HSVImage, CV_RGB2HSV);
-        //imshow("HSV", HSVImage);
+        cvtColor(currentImage, HSVImage, CV_RGB2HSV);
+        imshow("HSV", HSVImage);
 
         //-- YIQ
-        convert2YIQ(currentImageWC, YIQImageWC);            //-- T*
-        imshow("YIQ", YIQImageWC);                          //-- T*
-        //convert2YIQ(currentImage, YIQImage);
-        //imshow("YIQ", YIQImage);
+        convert2YIQ(currentImage, YIQImage);
+        imshow("YIQ", YIQImage);
 
     	//Histogram
-    	/*if(histogram(currentImage)==-1)
+    	if(histogram(currentImage)==-1)
     		cout << "No image data.. " <<endl;
     	else
-    	   histogram(currentImage);*/
-
-                                                            //-- T*
-        if(histogram(currentImageWC)==-1)
-            cout << "No image data.. " <<endl;
-        else
-            histogram(currentImageWC);
+    	   histogram(currentImage);
 
         // Copy to OpenCV Mat
         rawToMat(currentImage, image);
         imshow("ParrotCam", currentImage);
         clickedImage = currentImage;
         
-        if (currentImageWC.data) 
+        if (currentImage.data) 
         {
             /* Draw all points */
             for (int i = 0; i < points.size(); ++i) {
-                circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);        //--T*
-               // circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
+                circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);        //--T*
                 if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
-                    //line(clickedImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
-                    line(currentImageWC, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
+                    line(clickedImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); //dibuja las lineas entre puntos
                 }
             }
 
             /* Show image */
-            //imshow("Click", clickedImage);
-            imshow("ImageWC", currentImageWC);              //--T*
+            imshow("Click", clickedImage);
         }
         else
         {
