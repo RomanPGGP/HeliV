@@ -28,6 +28,7 @@ Mat grayImageWC;
 Mat binaryImageWC;
 Mat HSVImageWC;
 Mat YIQImageWC;
+Mat subImageWC;
 // ----------------------------------------------------
 
 // ---------------------------------------------------- Binary Related
@@ -56,6 +57,16 @@ int Py;
 int vR;
 int vG;
 int vB;
+
+int posXinit; 
+int posXlong;
+int posYinit; 
+int posYLong;
+
+float minRGB[3] = {255}; 
+float maxRGB[3] = {0};  
+
+int clickCounter = 0; 
 
 void Threshold_Demo( int, void* )
 {
@@ -198,6 +209,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
             vB=destination[Px * 3];
             vG=destination[Px*3+1];
             vR=destination[Px*3+2];
+            clickCounter++;
             points.push_back(Point(x, y));
         break;
         case CV_EVENT_RBUTTONDOWN:
@@ -223,6 +235,49 @@ void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
                 destinationImage.at<Vec3b>(y, x)[i] = sourceImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i];
                 destinationImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i] = sourceImage.at<Vec3b>(y, x)[i];
             }
+}
+
+void findUmbral(){
+
+    for (int k = posXinit; k < (posXlong); k++){
+        for (int j = posYinit; j < (posYLong); j++){
+            
+            Vec3f intensity = currentImageWC.at<Vec3f>(j, k);
+
+            float blue = intensity.val[0];
+            float green = intensity.val[1];
+            float red = intensity.val[2];
+            
+            cout << "b" << blue << endl; 
+            cout << "r" << red << endl; 
+            cout << "g" << green << endl; 
+            
+
+            if (blue < minRGB[2]){
+                minRGB[2] = blue;
+            }
+
+            if (blue > maxRGB[2]){
+                maxRGB[2] = blue;
+            }
+
+            if (green < minRGB[1]){
+                minRGB[1] = green;
+            }
+
+            if (green > maxRGB[1]){
+                maxRGB[1] = green;
+            }
+
+            if (red < minRGB[0]){
+                minRGB[0] = red;
+            }
+            if (red > maxRGB[0]){
+                minRGB[0] = red;
+            }
+
+        }
+    }
 }
 
 int main(int argc,char* argv[])
@@ -292,7 +347,10 @@ int main(int argc,char* argv[])
         fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
         fprintf(stdout, "  Land    : %d \n", joypadLand);
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
-        cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
+        cout << "Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
+        cout <<  clickCounter << endl;
+        cout << "MINRGB" << endl; 
+        cout << "R: " << minRGB[0] << "     G: " << minRGB[1] <<  "    B: " << minRGB[2] << endl;
 
         //-- Flip image
         flipImageBasic(currentImageWC, flippedImageWC);     //-- T*
@@ -323,7 +381,7 @@ int main(int argc,char* argv[])
         //-- YIQ
         convert2YIQ(currentImageWC, YIQImageWC);            //-- T*
         imshow("YIQ", YIQImageWC);                          //-- T*
-        
+
     	//Histogram                                         //-- T*
         if(histogram(currentImageWC)==-1)
             cout << "No image data.. " <<endl;
@@ -332,10 +390,23 @@ int main(int argc,char* argv[])
 
         if (currentImageWC.data) 
         {
-            /* Draw all points */
+            //Draw all points
             for (int i = 0; i < points.size(); ++i) {
                 circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);        //--T*
-               if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
+
+                if (clickCounter == 1){
+                    posXinit = points[i].x;
+                    posYinit = points[i].y;
+                }
+
+                if (clickCounter == 2){
+                    posXlong = points[i].x;
+                    posYLong = points[i].y; 
+                }
+
+                findUmbral();
+
+                if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
                     line(currentImageWC, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
                 }
             }
