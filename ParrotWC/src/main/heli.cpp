@@ -63,8 +63,8 @@ int posXlong;
 int posYinit; 
 int posYLong;
 
-float minRGB[3] = {255}; 
-float maxRGB[3] = {0};  
+float minRGB[3] = {255, 255, 255}; 
+float maxRGB[3] = {0, 0, 0};  
 
 int clickCounter = 0; 
 
@@ -239,19 +239,15 @@ void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
 
 void findUmbral(){
 
-    for (int k = posXinit; k < (posXlong); k++){
-        for (int j = posYinit; j < (posYLong); j++){
-            
-            Vec3f intensity = currentImageWC.at<Vec3f>(j, k);
+	uchar* destination;
+	int blue, green, red;
 
-            float blue = intensity.val[0];
-            float green = intensity.val[1];
-            float red = intensity.val[2];
-            
-            cout << "b" << blue << endl; 
-            cout << "r" << red << endl; 
-            cout << "g" << green << endl; 
-            
+    for (int k = posXinit; k < posXlong; k++){
+	for (int j = posYinit; j < posYLong; j++){
+            destination = (uchar*) currentImageWC.ptr<uchar>(j);
+            blue=destination[k * 3];
+            green=destination[k*3+1];
+            red=destination[k*3+2];
 
             if (blue < minRGB[2]){
                 minRGB[2] = blue;
@@ -273,7 +269,7 @@ void findUmbral(){
                 minRGB[0] = red;
             }
             if (red > maxRGB[0]){
-                minRGB[0] = red;
+                maxRGB[0] = red;
             }
 
         }
@@ -351,7 +347,7 @@ int main(int argc,char* argv[])
         cout <<  clickCounter << endl;
         cout << "MINRGB" << endl; 
         cout << "R: " << minRGB[0] << "     G: " << minRGB[1] <<  "    B: " << minRGB[2] << endl;
-
+	cout << "R: " << maxRGB[0] << "     G: " << maxRGB[1] <<  "    B: " << maxRGB[2] << endl;
         //-- Flip image
         flipImageBasic(currentImageWC, flippedImageWC);     //-- T*
         imshow("Flipped", flippedImageWC);                  //-- T*
@@ -392,23 +388,22 @@ int main(int argc,char* argv[])
         {
             //Draw all points
             for (int i = 0; i < points.size(); ++i) {
-                circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);        //--T*
+                //circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);        //--T*
 
-                if (clickCounter == 1){
+                if (points.size() == 1){
                     posXinit = points[i].x;
                     posYinit = points[i].y;
-                }
+		}
 
-                if (clickCounter == 2){
+                if (points.size() == 2){
                     posXlong = points[i].x;
                     posYLong = points[i].y; 
-                }
+                    findUmbral();
+		}
 
-                findUmbral();
-
-                if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
-                    line(currentImageWC, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
-                }
+                //if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
+                   // line(currentImageWC, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
+                //}
             }
             imshow("ImageWC", currentImageWC);              //--T*
         }
