@@ -309,7 +309,7 @@ void filter()
             
             if (B > maxRGB[2] || B < minRGB[2])
             {
-                RGBImageWC_filtered.at<Vec3b>(y, x) = 0; 
+                RGBImageWC_filtered.at<Vec3b>(y, x) = Vec3b(255,255,255); 
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
@@ -317,7 +317,7 @@ void filter()
 
             if (G > maxRGB[1] || G < minRGB[1])
             {
-                RGBImageWC_filtered.at<Vec3b>(y, x) = 0; 
+                RGBImageWC_filtered.at<Vec3b>(y, x) = Vec3b(255,255,255); 
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
@@ -325,7 +325,7 @@ void filter()
 
             if (R > maxRGB[0] || R < minRGB[0])
             {
-                RGBImageWC_filtered.at<Vec3b>(y, x) = 0; 
+                RGBImageWC_filtered.at<Vec3b>(y, x) = Vec3b(255,255,255); 
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
@@ -337,9 +337,9 @@ void filter()
         for (int x = 0; x < YIQImageWC.cols; ++x)  
         {
             //YIQ
-            Y = YIQImageWC.at<Vec3b>(y, x)[1];
-            I = YIQImageWC.at<Vec3b>(y, x)[2];
-            Q = YIQImageWC.at<Vec3b>(y, x)[3];
+            Y = YIQImageWC.at<Vec3b>(y, x).val[1];
+            I = YIQImageWC.at<Vec3b>(y, x).val[2];
+            Q = YIQImageWC.at<Vec3b>(y, x).val[3];
 
             Ymin = 0.299*minRGB[0] + 0.587*minRGB[1] + 0.114*minRGB[2];
             Imin = 0.596*minRGB[0] - 0.275*minRGB[1] - 0.321*minRGB[2];
@@ -351,30 +351,32 @@ void filter()
 
             if (Y > Ymax || Y < Ymin)
             {
+                //YIQImageWC_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
                 YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
-                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
-                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;            
+                //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
+                //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;            
             }
 
             if (I > Imax || I < Imin)
             {
-                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
+                //YIQImageWC_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
+                //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
                 YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
-                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;  
+                //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;  
             }
 
             if (Q > Qmax || Q < Qmin)
             {
-                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
+                //YIQImageWC_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
+                //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
                 YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
-                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;   
+                //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;   
             }
         }
 
     //HSV
-    //cvtColor(RGBImageWC_filtered, HSVImageWC_filtered, CV_RGB2HSV);   //-- T*
-    //imshow("HSV_FILTERED", HSVImageWC_filtered);                         //-- T*
-
+    cvtColor(RGBImageWC_filtered, HSVImageWC_filtered, CV_RGB2HSV);   //-- T*
+    imshow("HSV_FILTERED", HSVImageWC_filtered);                         //-- T*
     imshow("RGB_FILTERED", RGBImageWC_filtered);                          //-- T*
     imshow("YIQ_FILTERED", YIQImageWC_filtered);                          //-- T*
 
