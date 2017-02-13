@@ -29,6 +29,9 @@ Mat binaryImageWC;
 Mat HSVImageWC;
 Mat YIQImageWC;
 Mat subImageWC;
+Mat YIQImageWC_filtered;
+Mat RGBImageWC_filtered; 
+Mat HSVImageWC_filtered;
 // ----------------------------------------------------
 
 // ---------------------------------------------------- Binary Related
@@ -92,9 +95,9 @@ void convert2YIQ(const Mat &sourceImage, Mat &destinationImage)
     for (int y = 0; y < sourceImage.rows; ++y)      
         for (int x = 0; x < sourceImage.cols; ++x)  
         {
-            B = sourceImage.at<Vec3b>(y, x)[1];
-            G = sourceImage.at<Vec3b>(y, x)[2];
-            R = sourceImage.at<Vec3b>(y, x)[3];
+            B = sourceImage.at<Vec3b>(y, x).val[1];
+            G = sourceImage.at<Vec3b>(y, x).val[2];
+            R = sourceImage.at<Vec3b>(y, x).val[3];
             
             //Conversion from RGB to YIQ
             Y = 0.299*R + 0.587*G + 0.114*B;
@@ -243,7 +246,7 @@ void findUmbral(){
 	int blue, green, red;
 
     for (int k = posXinit; k < posXlong; k++){
-	for (int j = posYinit; j < posYLong; j++){
+	   for (int j = posYinit; j < posYLong; j++){
             destination = (uchar*) currentImageWC.ptr<uchar>(j);
             blue=destination[k * 3];
             green=destination[k*3+1];
@@ -276,6 +279,108 @@ void findUmbral(){
     }
 }
 
+void filter()
+{
+    int Ymin, Imin, Qmin;
+    int Ymax, Imax, Qmax;
+    int R, G, B;
+    int Y, I, Q; 
+
+    /*if (RGBImageWC_filtered.empty()){
+        RGBImageWC_filtered = Mat(currentImageWC.rows, currentImageWC.cols, currentImageWC.type());
+    }
+
+    if (YIQImageWC_filtered.empty()){
+        YIQImageWC_filtered = Mat(YIQImageWC.rows, YIQImageWC.cols, YIQImageWC.type());
+    }*/
+    
+    RGBImageWC_filtered = currentImageWC.clone();
+    YIQImageWC_filtered = YIQImageWC.clone();
+
+    for (int y = 0; y < currentImageWC.rows; ++y)      
+        for (int x = 0; x < currentImageWC.cols; ++x)  
+        {
+            //RGB
+            B = currentImageWC.at<Vec3b>(y, x).val[1];
+            G = currentImageWC.at<Vec3b>(y, x).val[2];
+            R = currentImageWC.at<Vec3b>(y, x).val[3];
+
+            cout << R << "  " << G << " " << B << "  " << endl;
+            
+            if (B > maxRGB[2] || B < minRGB[2])
+            {
+                RGBImageWC_filtered.at<Vec3b>(y, x) = 0; 
+                //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
+                //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
+                //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
+            }
+
+            if (G > maxRGB[1] || G < minRGB[1])
+            {
+                RGBImageWC_filtered.at<Vec3b>(y, x) = 0; 
+                //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
+                //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
+                //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
+            }
+
+            if (R > maxRGB[0] || R < minRGB[0])
+            {
+                RGBImageWC_filtered.at<Vec3b>(y, x) = 0; 
+                //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
+                //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
+                //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
+            }
+        }
+
+
+    for (int y = 0; y < YIQImageWC.rows; ++y)      
+        for (int x = 0; x < YIQImageWC.cols; ++x)  
+        {
+            //YIQ
+            Y = YIQImageWC.at<Vec3b>(y, x)[1];
+            I = YIQImageWC.at<Vec3b>(y, x)[2];
+            Q = YIQImageWC.at<Vec3b>(y, x)[3];
+
+            Ymin = 0.299*minRGB[0] + 0.587*minRGB[1] + 0.114*minRGB[2];
+            Imin = 0.596*minRGB[0] - 0.275*minRGB[1] - 0.321*minRGB[2];
+            Qmin = 0.212*minRGB[0] - 0.523*minRGB[1] + 0.311*minRGB[2];
+
+            Ymax = 0.299*maxRGB[0] + 0.587*maxRGB[1] + 0.114*maxRGB[2];
+            Imax = 0.596*maxRGB[0] - 0.275*maxRGB[1] - 0.321*maxRGB[2];
+            Qmax = 0.212*maxRGB[0] - 0.523*maxRGB[1] + 0.311*maxRGB[2];           
+
+            if (Y > Ymax || Y < Ymin)
+            {
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;            
+            }
+
+            if (I > Imax || I < Imin)
+            {
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;  
+            }
+
+            if (Q > Qmax || Q < Qmin)
+            {
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;   
+            }
+        }
+
+    //HSV
+    //cvtColor(RGBImageWC_filtered, HSVImageWC_filtered, CV_RGB2HSV);   //-- T*
+    //imshow("HSV_FILTERED", HSVImageWC_filtered);                         //-- T*
+
+    imshow("RGB_FILTERED", RGBImageWC_filtered);                          //-- T*
+    imshow("YIQ_FILTERED", YIQImageWC_filtered);                          //-- T*
+
+    clicked = false;
+}
+
 int main(int argc,char* argv[])
 {
     VideoCapture webcam;                            //-- T*
@@ -306,8 +411,9 @@ int main(int argc,char* argv[])
         webcam >> currentImageWC;                   //-- T*
         
         imshow("ImageWC", currentImageWC);
-
     }
+
+    clicked = false;
 
     while (stop == false)
     {
@@ -347,7 +453,8 @@ int main(int argc,char* argv[])
         cout <<  clickCounter << endl;
         cout << "MINRGB" << endl; 
         cout << "R: " << minRGB[0] << "     G: " << minRGB[1] <<  "    B: " << minRGB[2] << endl;
-	cout << "R: " << maxRGB[0] << "     G: " << maxRGB[1] <<  "    B: " << maxRGB[2] << endl;
+        cout << "MAXRGB" << endl; 
+	    cout << "R: " << maxRGB[0] << "     G: " << maxRGB[1] <<  "    B: " << maxRGB[2] << endl;
         //-- Flip image
         flipImageBasic(currentImageWC, flippedImageWC);     //-- T*
         imshow("Flipped", flippedImageWC);                  //-- T*
@@ -410,6 +517,10 @@ int main(int argc,char* argv[])
         else
         {
             cout << "No image data.. " << endl;
+        }
+
+        if (clicked){
+            filter();
         }
 
 
