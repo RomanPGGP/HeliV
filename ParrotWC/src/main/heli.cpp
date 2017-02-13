@@ -28,7 +28,6 @@ Mat grayImageWC;
 Mat binaryImageWC;
 Mat HSVImageWC;
 Mat YIQImageWC;
-Mat subImageWC;
 Mat YIQImageWC_filtered;
 Mat RGBImageWC_filtered; 
 Mat HSVImageWC_filtered;
@@ -277,6 +276,8 @@ void findUmbral(){
 
         }
     }
+
+    cout << "couleurs max et min umbral" << maxRGB << "  " << minRGB << "  " << endl;
 }
 
 void filter()
@@ -307,7 +308,7 @@ void filter()
 
             cout << R << "  " << G << " " << B << "  " << endl;
             
-            if (B > maxRGB[2] || B < minRGB[2])
+            if (B > maxRGB[2]-10 || B < minRGB[2]-10)
             {
                 RGBImageWC_filtered.at<Vec3b>(y, x) = Vec3b(255,255,255); 
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
@@ -315,7 +316,7 @@ void filter()
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
             }
 
-            if (G > maxRGB[1] || G < minRGB[1])
+            if (G > maxRGB[1]-10 || G < minRGB[1]-10)
             {
                 RGBImageWC_filtered.at<Vec3b>(y, x) = Vec3b(255,255,255); 
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
@@ -323,7 +324,7 @@ void filter()
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
             }
 
-            if (R > maxRGB[0] || R < minRGB[0])
+            if (R > maxRGB[0]-10 || R < minRGB[0]-10)
             {
                 RGBImageWC_filtered.at<Vec3b>(y, x) = Vec3b(255,255,255); 
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
@@ -352,7 +353,7 @@ void filter()
             if (Y > Ymax || Y < Ymin)
             {
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
-                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 1;
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;            
             }
