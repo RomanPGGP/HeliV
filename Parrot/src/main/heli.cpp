@@ -299,8 +299,8 @@ void filter()
 
     uchar* destination;
 
-    for (int y = 0; y < currentImage.rows; ++y)      
-        for (int x = 0; x < currentImage.cols; ++x)  
+    for (int y = 0; y < RGBImage_filtered.cols; ++y)      
+        for (int x = 0; x < RGBImage_filtered.rows; ++x)  
         {
 
             //RGB
@@ -318,7 +318,7 @@ void filter()
             
             if (B > (maxRGB[2]) || B < (minRGB[2] ))
             {
-                RGBImage_filtered.at<Vec3b>(y, x) = Vec3b(0,255,255); 
+                RGBImage_filtered.at<Vec3b>(x, y) = Vec3b(255,255,255); 
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
@@ -326,7 +326,7 @@ void filter()
 
             if (G > (maxRGB[1]) || G < (minRGB[1]))
             {
-                RGBImage_filtered.at<Vec3b>(y, x) = Vec3b(255,0,255); 
+                RGBImage_filtered.at<Vec3b>(x, y) = Vec3b(255,255,255); 
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
@@ -334,7 +334,7 @@ void filter()
 
             if (R > (maxRGB[0]) || R < (minRGB[0]))
             {
-                RGBImage_filtered.at<Vec3b>(y, x) = Vec3b(255,255,0); 
+                RGBImage_filtered.at<Vec3b>(x, y) = Vec3b(255,255,255); 
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
                 //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
@@ -345,10 +345,17 @@ void filter()
     for (int y = 0; y < YIQImage.rows; ++y)      
         for (int x = 0; x < YIQImage.cols; ++x)  
         {
+            destination = (uchar*) YIQImage.ptr<uchar>(x);
+
+            Y = destination[y * 3];
+            I = destination[y*3+1];
+            Q = destination[y*3+2];
+
+
             //YIQ
-            Y = YIQImage.at<Vec3b>(y, x).val[1];
-            I = YIQImage.at<Vec3b>(y, x).val[2];
-            Q = YIQImage.at<Vec3b>(y, x).val[3];
+            //Y = YIQImage.at<Vec3b>(y, x).val[1];
+            //I = YIQImage.at<Vec3b>(y, x).val[2];
+            //Q = YIQImage.at<Vec3b>(y, x).val[3];
 
             Ymin = 0.299*minRGB[0] + 0.587*minRGB[1] + 0.114*minRGB[2];
             Imin = 0.596*minRGB[0] - 0.275*minRGB[1] - 0.321*minRGB[2];
@@ -356,7 +363,8 @@ void filter()
 
             Ymax = 0.299*maxRGB[0] + 0.587*maxRGB[1] + 0.114*maxRGB[2];
             Imax = 0.596*maxRGB[0] - 0.275*maxRGB[1] - 0.321*maxRGB[2];
-            Qmax = 0.212*maxRGB[0] - 0.523*maxRGB[1] + 0.311*maxRGB[2];           
+            Qmax = 0.212*maxRGB[0] - 0.523*maxRGB[1] + 0.311*maxRGB[2]; 
+
 
             if (Y > Ymax || Y < Ymin)
             {
