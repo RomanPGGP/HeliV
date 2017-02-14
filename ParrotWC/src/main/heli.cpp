@@ -297,14 +297,18 @@ void filter()
     
     RGBImageWC_filtered = currentImageWC.clone();
     YIQImageWC_filtered = YIQImageWC.clone();
-
+    uchar* destination;
     for (int y = 0; y < currentImageWC.rows; ++y)      
         for (int x = 0; x < currentImageWC.cols; ++x)  
         {
             //RGB
-            B = currentImageWC.at<Vec3b>(y, x).val[1];
-            G = currentImageWC.at<Vec3b>(y, x).val[2];
-            R = currentImageWC.at<Vec3b>(y, x).val[3];
+            //B = currentImageWC.at<Vec3b>(y, x).val[1];
+            //G = currentImageWC.at<Vec3b>(y, x).val[2];
+            //R = currentImageWC.at<Vec3b>(y, x).val[3];
+	    destination = (uchar*) currentImageWC.ptr<uchar>(y);
+            B=destination[x * 3];
+            G=destination[x*3+1];
+            R=destination[x*3+2];
 
             cout << R << "  " << G << " " << B << "  " << endl;
             
@@ -353,7 +357,11 @@ void filter()
             if (Y > Ymax || Y < Ymin)
             {
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
+<<<<<<< HEAD
                 YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 1;
+=======
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 255;
+>>>>>>> 2bf8d12670ab12be039851b23fbeb44a34f7091b
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;            
             }
@@ -362,7 +370,7 @@ void filter()
             {
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
-                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 255;
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;  
             }
 
@@ -370,7 +378,7 @@ void filter()
             {
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[1] = 0;
-                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 0;
+                YIQImageWC_filtered.at<Vec3b>(Point(x, y))[2] = 255;
                 //YIQImageWC_filtered.at<Vec3b>(Point(x, y))[3] = 0;   
             }
         }
