@@ -373,10 +373,10 @@ void filter()
         }
 
     //HSV
-    cvtColor(RGBImage_filtered, HSVImage_filtered, CV_RGB2HSV);   //-- T*
-    imshow("HSV_FILTERED", HSVImage_filtered);                         //-- T*
-    imshow("RGB_FILTERED", RGBImage_filtered);                          //-- T*
-    imshow("YIQ_FILTERED", YIQImage_filtered);                          //-- T*
+    cvtColor(RGBImage_filtered, HSVImage_filtered, CV_RGB2HSV);   
+    imshow("HSV_FILTERED", HSVImage_filtered);                         
+    imshow("RGB_FILTERED", RGBImage_filtered);                          
+    imshow("YIQ_FILTERED", YIQImage_filtered);                          
 
     clicked = false;
 }
@@ -476,13 +476,12 @@ void readUserInput()
 
 int main(int argc,char* argv[])
 {
-    VideoCapture webcam;                            //-- T*
-    webcam.open(0);                                 //-- T*
+    VideoCapture webcam;                            
+    webcam.open(0);                                 
 
     heli = new CHeli();  
     image = new CRawImage(320,240);                 //-- Holds the image from the drone
     
-
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);   //-- Initialize joystick
     useJoystick = SDL_NumJoysticks() > 0;
 
@@ -492,15 +491,15 @@ int main(int argc,char* argv[])
         m_joystick = SDL_JoystickOpen(0);
     }
   
-    namedWindow("Image");                                         //-- T*
-    setMouseCallback("Image", mouseCoordinatesExampleCallback);   //-- T*
+    namedWindow("Image");                                         
+    setMouseCallback("Image", mouseCoordinatesExampleCallback);   
 
     //-- While user doesn't click in image, keep streaming
     while (stop == false)
     {
         heli->renewImage(image);
 
-        webcam >> currentImage;                   //-- T*
+        webcam >> currentImage;                   
         
         imshow("Image", currentImage);
 
@@ -512,16 +511,16 @@ int main(int argc,char* argv[])
         printInformation();
 
         //-- Flip image
-        flipImageBasic(currentImage, flippedImage);     //-- T*
-        imshow("Flipped", flippedImage);                  //-- T*
+        flipImageBasic(currentImage, flippedImage);     
+        imshow("Flipped", flippedImage);                  
         
         //-- Gray image
-        cvtColor(currentImage,grayImage,CV_RGB2GRAY);   //-- T*
-        imshow("Gray", grayImage);                        //-- T*
+        cvtColor(currentImage,grayImage,CV_RGB2GRAY);   
+        imshow("Gray", grayImage);                        
         
         //-- Binary image
-        binaryImage = grayImage > 128;                  //-- T*
-        imshow("BIN", binaryImage);                       //-- T*
+        binaryImage = grayImage > 128;                  
+        imshow("BIN", binaryImage);                       
         
         //-- Binary image alternative
         namedWindow(binaryWindowName, CV_WINDOW_AUTOSIZE);  //-- Create window
@@ -534,12 +533,12 @@ int main(int argc,char* argv[])
         Threshold_Demo(0, 0);                               //-- Call the function to initialize
 
         //-- HSV
-        cvtColor(currentImage, HSVImage, CV_RGB2HSV);   //-- T*
-        imshow("HSV", HSVImage);                          //-- T*
+        cvtColor(currentImage, HSVImage, CV_RGB2HSV);   
+        imshow("HSV", HSVImage);                          
        
         //-- YIQ
-        convert2YIQ(currentImage, YIQImage);            //-- T*
-        imshow("YIQ", YIQImage);                          //-- T*
+        convert2YIQ(currentImage, YIQImage);            
+        imshow("YIQ", YIQImage);                          
 
     	//Histogram
         if(histogram(currentImage) == -1)
@@ -547,43 +546,25 @@ int main(int argc,char* argv[])
         else
             histogram(currentImage);
 
-        if (currentImage.data) 
-        {
-            //cout << "------------------------------------------------------DRAW" << endl;
-            //Draw all points
-            for (int i = 0; i < points.size(); ++i) 
-            {
-                circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);        //--T*
-
-                if (points.size() == 1)
-                {
-                    posXinit = points[i].x;
-                    posYinit = points[i].y;
-		        }
-
-                if (points.size() == 2)
-                {
-                    posXlong = points[i].x;
-                    posYLong = points[i].y; 
-                    //findUmbral();
-		        }
-
-                //if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
-                   // line(currentImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
-                //}
-            }
-            //imshow("Image", currentImage);              //--T*
-        }
-        else
-        {
-            cout << "No image data.. " << endl;
-        }
-
         if (clicked){
             clickedImage = currentImage;
             clicked = false;
             imshow("Clicked", clickedImage);
-            //filter();
+            
+            if (clickedImage.data) 
+            {
+                //Draw all points
+                for (int i = 0; i < points.size(); ++i) 
+                {
+                    /*circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
+                    if((points.size() > 1) &&(i != 0)){ 
+                       line(currentImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
+                    }*/
+
+                    //INSERTE IF DE ROMÁN
+                }
+                //imshow("Image", currentImage); 
+            }
         }
 
         readUserInput();

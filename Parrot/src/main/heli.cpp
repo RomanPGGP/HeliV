@@ -19,6 +19,7 @@ int joypadRoll = 0;
 int joypadPitch = 0; 
 int joypadVerticalSpeed = 0; 
 int joypadYaw = 0;
+int clickCounter=0;
 // ----------------------------------------------------
 
 // ---------------------------------------------------- Matrices to store the image
@@ -29,9 +30,6 @@ Mat grayImage;
 Mat binaryImage;
 Mat YIQImage;
 Mat HSVImage;
-Mat YIQImage_filtered;
-Mat RGBImage_filtered; 
-Mat HSVImage_filtered;
 // ----------------------------------------------------
 
 // ---------------------------------------------------- Binary Related
@@ -61,15 +59,8 @@ int vR;
 int vG;
 int vB;
 
-int posXinit; 
-int posXlong;
-int posYinit; 
-int posYLong;
-
-float minRGB[3] = {255, 255, 255}; 
-float maxRGB[3] = {0, 0, 0};  
-
-int clickCounter = 0; 
+int minRGB[3] = {255, 255, 255}; 
+int maxRGB[3] = {0, 0, 0};
 
 void Threshold_Demo( int, void* )
 {
@@ -95,9 +86,9 @@ void convert2YIQ(const Mat &sourceImage, Mat &destinationImage)
     for (int y = 0; y < sourceImage.rows; ++y)      
         for (int x = 0; x < sourceImage.cols; ++x)  
         {
-            B = sourceImage.at<Vec3b>(y, x)[1];
-            G = sourceImage.at<Vec3b>(y, x)[2];
-            R = sourceImage.at<Vec3b>(y, x)[3];
+            B = sourceImage.at<Vec3b>(y, x)[0];
+            G = sourceImage.at<Vec3b>(y, x)[1];
+            R = sourceImage.at<Vec3b>(y, x)[2];
             
             //Conversion from RGB to YIQ
             Y = 0.299*R + 0.587*G + 0.114*B;
@@ -105,9 +96,9 @@ void convert2YIQ(const Mat &sourceImage, Mat &destinationImage)
             Q = 0.212*R - 0.523*G + 0.311*B;
             
             //Changing the channel value to the YIQ world
-            destinationImage.at<Vec3b>(y, x)[1] = Y;
-            destinationImage.at<Vec3b>(y, x)[2] = I;
-            destinationImage.at<Vec3b>(y, x)[3] = Q;
+            destinationImage.at<Vec3b>(y, x)[0] = Y;
+            destinationImage.at<Vec3b>(y, x)[1] = I;
+            destinationImage.at<Vec3b>(y, x)[2] = Q;
         }
 }
 
@@ -115,10 +106,10 @@ void convert2YIQ(const Mat &sourceImage, Mat &destinationImage)
 int histogram(const Mat &sourceImage)
 {
     Mat src;
-	
+    
     src = sourceImage;
 
-	if( !src.data )
+    if( !src.data )
     { 
         return -1; 
     }
@@ -212,7 +203,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
             vB=destination[Px * 3];
             vG=destination[Px*3+1];
             vR=destination[Px*3+2];
-            clickCounter++;
+        clickCounter++;
             points.push_back(Point(x, y));
         break;
         case CV_EVENT_RBUTTONDOWN:
@@ -240,24 +231,25 @@ void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
             }
 }
 
-void findUmbral(){
-
+void filtrado(const Mat &sourceImage, int posXinit, int posYinit, int posXlong, int posYlong)
+{
     uchar* destination;
-    int blue, green, red;
-
+        int blue, green, red;
+    
+    Mat destImage;
+    
     for (int k = posXinit; k < posXlong; k++){
-       for (int j = posYinit; j < posYLong; j++){
-            destination = (uchar*) currentImage.ptr<uchar>(j);
+           for (int j = posYinit; j < posYlong; j++){
+            destination = (uchar*) sourceImage.ptr<uchar>(j);
             blue=destination[k * 3];
             green=destination[k*3+1];
             red=destination[k*3+2];
-
-            if (blue < minRGB[2]){
-                minRGB[2] = blue;
+            if (blue < minRGB[0]){
+                minRGB[0] = blue;
             }
 
-            if (blue > maxRGB[2]){
-                maxRGB[2] = blue;
+            if (blue > maxRGB[0]){
+                maxRGB[0] = blue;
             }
 
             if (green < minRGB[1]){
@@ -268,138 +260,146 @@ void findUmbral(){
                 maxRGB[1] = green;
             }
 
-            if (red < minRGB[0]){
-                minRGB[0] = red;
+            if (red < minRGB[2]){
+                minRGB[2] = red;
             }
-            if (red > maxRGB[0]){
-                maxRGB[0] = red;
+            if (red > maxRGB[2]){
+                maxRGB[2] = red;
             }
 
         }
     }
+    destImage=sourceImage.clone();
+    for (int y = 0; y < sourceImage.rows; ++y){
+            for (int x = 0; x < sourceImage.cols; ++x)  
+            {
+            destination = (uchar*) destImage.ptr<uchar>(y);
+                    blue=destination[x * 3];
+                    green=destination[x*3+1];
+                    red=destination[x*3+2];
+
+            if (blue > maxRGB[0] || blue < minRGB[0])
+                    {
+                if (green > maxRGB[1] || green < minRGB[1])
+                        {   destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);
+                }
+                else if (red > maxRGB[2] || red < minRGB[2])
+                {   destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+            }
+            if (green > maxRGB[1] || green < minRGB[1])
+                    {
+                if (blue > maxRGB[0] || blue < minRGB[0])
+                        {   destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+                else if (red > maxRGB[2] || red < minRGB[2])
+                                {       destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+            }
+            if (red > maxRGB[2] || red < minRGB[2])
+                {
+                        if (blue > maxRGB[0] || blue < minRGB[0])
+                                {        destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+                else if (green > maxRGB[1] || green < minRGB[1])
+                                {        destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+            }
+        }
+    }
+
+
+    imshow("Filtrado", destImage);
+
 }
 
-void filter()
+void printInformation()
 {
-    int Ymin, Imin, Qmin;
-    int Ymax, Imax, Qmax;
-    int R, G, B;
-    int Y, I, Q; 
-
-    /*if (RGBImageWC_filtered.empty()){
-        RGBImageWC_filtered = Mat(currentImageWC.rows, currentImageWC.cols, currentImageWC.type());
-    }
-
-    if (YIQImageWC_filtered.empty()){
-        YIQImageWC_filtered = Mat(YIQImageWC.rows, YIQImageWC.cols, YIQImageWC.type());
-    }*/
-    
-    RGBImage_filtered = currentImage.clone();
-    YIQImage_filtered = YIQImage.clone();
-
-    uchar* destination;
-
-    for (int y = 0; y < RGBImage_filtered.cols; ++y)      
-        for (int x = 0; x < RGBImage_filtered.rows; ++x)  
-        {
-
-            //RGB
-            //B = currentImage.at<Vec3b>(y, x).val[1];
-            //G = currentImage.at<Vec3b>(y, x).val[2];
-            //R = currentImage.at<Vec3b>(y, x).val[3];
-
-            destination = (uchar*) currentImage.ptr<uchar>(x);
-
-            B = destination[y * 3];
-            G = destination[y*3+1];
-            R = destination[y*3+2];
-
-            cout << R << "  " << G << " " << B << "  " << endl;
-            
-            if (B > (maxRGB[2]) || B < (minRGB[2] ))
-            {
-                RGBImage_filtered.at<Vec3b>(x, y) = Vec3b(255,255,255); 
-                //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
-                //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
-                //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
-            }
-
-            if (G > (maxRGB[1]) || G < (minRGB[1]))
-            {
-                RGBImage_filtered.at<Vec3b>(x, y) = Vec3b(255,255,255); 
-                //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
-                //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
-                //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
-            }
-
-            if (R > (maxRGB[0]) || R < (minRGB[0]))
-            {
-                RGBImage_filtered.at<Vec3b>(x, y) = Vec3b(255,255,255); 
-                //RGBImageWC_filtered.at<Vec3b>(y, x)[1] = 0;
-                //RGBImageWC_filtered.at<Vec3b>(y, x)[2] = 0;
-                //RGBImageWC_filtered.at<Vec3b>(y, x)[3] = 0;
-            }
-        }
-
-
-    for (int y = 0; y < YIQImage.rows; ++y)      
-        for (int x = 0; x < YIQImage.cols; ++x)  
-        {
-            destination = (uchar*) YIQImage.ptr<uchar>(x);
-
-            Y = destination[y * 3];
-            I = destination[y*3+1];
-            Q = destination[y*3+2];
-
-
-            //YIQ
-            //Y = YIQImage.at<Vec3b>(y, x).val[1];
-            //I = YIQImage.at<Vec3b>(y, x).val[2];
-            //Q = YIQImage.at<Vec3b>(y, x).val[3];
-
-            Ymin = 0.299*minRGB[0] + 0.587*minRGB[1] + 0.114*minRGB[2];
-            Imin = 0.596*minRGB[0] - 0.275*minRGB[1] - 0.321*minRGB[2];
-            Qmin = 0.212*minRGB[0] - 0.523*minRGB[1] + 0.311*minRGB[2];
-
-            Ymax = 0.299*maxRGB[0] + 0.587*maxRGB[1] + 0.114*maxRGB[2];
-            Imax = 0.596*maxRGB[0] - 0.275*maxRGB[1] - 0.321*maxRGB[2];
-            Qmax = 0.212*maxRGB[0] - 0.523*maxRGB[1] + 0.311*maxRGB[2]; 
-
-
-            if (Y > Ymax || Y < Ymin)
-            {
-                //YIQImage_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
-                YIQImage_filtered.at<Vec3b>(Point(x, y))[1] = 0;
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[2] = 0;
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[3] = 0;            
-            }
-
-            if (I > Imax || I < Imin)
-            {
-                //YIQImage_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[1] = 0;
-                YIQImage_filtered.at<Vec3b>(Point(x, y))[2] = 0;
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[3] = 0;  
-            }
-
-            if (Q > Qmax || Q < Qmin)
-            {
-                //YIQImage_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[1] = 0;
-                YIQImage_filtered.at<Vec3b>(Point(x, y))[2] = 0;
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[3] = 0;   
-            }
-        }
-
-    //HSV
-    cvtColor(RGBImage_filtered, HSVImage_filtered, CV_RGB2HSV);   //-- T*
-    imshow("HSV_FILTERED", HSVImage_filtered);                         //-- T*
-    imshow("RGB_FILTERED", RGBImage_filtered);                          //-- T*
-    imshow("YIQ_FILTERED", YIQImage_filtered);                          //-- T*
-
-    clicked = false;
+    //-- Prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
+    printf("===================== Parrot Basic Example =====================\n\n");
+    fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
+    fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
+    fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
+    fprintf(stdout, "Hover   : %d \n", hover);
+    fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
+    fprintf(stdout, "  Roll    : %d \n", joypadRoll);
+    fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
+    fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
+    fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
+    fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
+    fprintf(stdout, "  Land    : %d \n", joypadLand);
+    fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
+    cout << "Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
+    cout <<  clickCounter << endl;
+    cout << "MINRGB" << endl; 
+    cout << "R: " << minRGB[0] << "     G: " << minRGB[1] <<  "    B: " << minRGB[2] << endl;
+    cout << "MAXRGB" << endl; 
+    cout << "R: " << maxRGB[0] << "     G: " << maxRGB[1] <<  "    B: " << maxRGB[2] << endl;
 }
 
+void updateJoypadInfo()
+{
+    if (useJoystick)
+    {
+        SDL_Event event;
+        SDL_PollEvent(&event);
+
+        joypadRoll = SDL_JoystickGetAxis(m_joystick, 2);
+        joypadPitch = SDL_JoystickGetAxis(m_joystick, 3);
+        joypadVerticalSpeed = SDL_JoystickGetAxis(m_joystick, 1);
+        joypadYaw = SDL_JoystickGetAxis(m_joystick, 0);
+        joypadTakeOff = SDL_JoystickGetButton(m_joystick, 1);
+        joypadLand = SDL_JoystickGetButton(m_joystick, 2);
+        joypadHover = SDL_JoystickGetButton(m_joystick, 0);
+    }
+}
+
+void joypadChanges()
+{
+    if (joypadTakeOff) 
+    {
+        heli->takeoff();
+    }
+    
+    if (joypadLand) 
+    {
+        heli->land();
+    }
+    //hover = joypadHover ? 1 : 0;
+
+    //setting the drone angles
+    if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
+    {
+        heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
+        navigatedWithJoystick = true;
+    }
+    else
+    {
+        heli->setAngles(pitch, roll, yaw, height, hover);
+        navigatedWithJoystick = false;
+    }
+}
+
+void readUserInput()
+{
+    char key = waitKey(5);
+
+    switch (key) 
+    {
+        case 'a': yaw = -20000.0; break;
+        case 'd': yaw = 20000.0; break;
+        case 'w': height = -20000.0; break;
+        case 's': height = 20000.0; break;
+        case 'q': heli->takeoff(); break;
+        case 'e': heli->land(); break;
+        case 'z': heli->switchCamera(0); break;
+        case 'x': heli->switchCamera(1); break;
+        case 'c': heli->switchCamera(2); break;
+        case 'v': heli->switchCamera(3); break;
+        case 'j': roll = -20000.0; break;
+        case 'l': roll = 20000.0; break;
+        case 'i': pitch = -20000.0; break;
+        case 'k': pitch = 20000.0; break;
+        case 'h': hover = (hover + 1) % 2; break;
+        case 27: stop = true; break;
+        default: pitch = roll = yaw = height = 0.0;
+    }
+}
 
 int main(int argc,char* argv[])
 {
@@ -421,62 +421,19 @@ int main(int argc,char* argv[])
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
 
     //-- While user doesn't click in image, keep streaming
-    while (!clicked){
-        waitKey(5);
-
+    while (stop == false)
+    {
         heli->renewImage(image);
         
         rawToMat(currentImage, image);
         imshow("ParrotCam", currentImage);
 
-        clickedImage = currentImage;
-        
-        imshow("Click", clickedImage);
-
-    }
-
-    clicked = false;
-
-    while (stop == false)
-    {
         printf("\033[2J\033[1;1H");                 //-- Clear the console
 
         cout << "useJOystick" << endl;
 
-        if (useJoystick)
-        {
-            SDL_Event event;
-            SDL_PollEvent(&event);
-
-            joypadRoll = SDL_JoystickGetAxis(m_joystick, 2);
-            joypadPitch = SDL_JoystickGetAxis(m_joystick, 3);
-            joypadVerticalSpeed = SDL_JoystickGetAxis(m_joystick, 1);
-            joypadYaw = SDL_JoystickGetAxis(m_joystick, 0);
-            joypadTakeOff = SDL_JoystickGetButton(m_joystick, 1);
-            joypadLand = SDL_JoystickGetButton(m_joystick, 2);
-            joypadHover = SDL_JoystickGetButton(m_joystick, 0);
-        }
-
-        //-- Prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
-        printf("===================== Parrot Basic Example =====================\n\n");
-        fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
-        fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
-        fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
-        fprintf(stdout, "Hover   : %d \n", hover);
-        fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
-        fprintf(stdout, "  Roll    : %d \n", joypadRoll);
-        fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
-        fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
-        fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
-        fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
-        fprintf(stdout, "  Land    : %d \n", joypadLand);
-        fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
-        cout << "Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
-        cout <<  clickCounter << endl;
-        cout << "MINRGB" << endl; 
-        cout << "R: " << minRGB[0] << "     G: " << minRGB[1] <<  "    B: " << minRGB[2] << endl;
-        cout << "MAXRGB" << endl; 
-        cout << "R: " << maxRGB[0] << "     G: " << maxRGB[1] <<  "    B: " << maxRGB[2] << endl;
+        updateJoypadInfo();
+        printInformation();
 
         //-- Flip image
         flipImageBasic(currentImage, flippedImage);       
@@ -508,95 +465,41 @@ int main(int argc,char* argv[])
         convert2YIQ(currentImage, YIQImage);
         imshow("YIQ", YIQImage);
 
-    	//Histogram
-    	if(histogram(currentImage)==-1)
-    		cout << "No image data.. " <<endl;
-    	else
-    	   histogram(currentImage);
-
-        // Copy to OpenCV Mat
-        rawToMat(currentImage, image);
-        imshow("ParrotCam", currentImage);
-        clickedImage = currentImage;
-        
-        if (currentImage.data) 
-        {
-            //Draw all points
-            for (int i = 0; i < points.size(); ++i) {
-                //circle(currentImageWC, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);        //--T*
-
-                if (points.size() == 1){
-                    posXinit = points[i].x;
-                    posYinit = points[i].y;
-        }
-
-                if (points.size() == 2){
-                    posXlong = points[i].x;
-                    posYLong = points[i].y; 
-                    findUmbral();
-        }
-
-                //if((points.size() > 1) &&(i != 0)){ //Condicion para no tomar en cuenta el punto -1, que no existe
-                   // line(currentImageWC, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
-                //}
-            }
-            imshow("Image", currentImage);              //--T*
-        }
+        //Histogram
+        if(histogram(currentImage) == -1)
+            cout << "No image data.. " <<endl;
         else
-        {
-            cout << "No image data.. " << endl;
-        }
+           histogram(currentImage);
+        
 
         if (clicked){
-            filter();
+            clickedImage = currentImage;
+            clicked = false;
+            imshow("Clicked", clickedImage);
+            
+            if (clickedImage.data) 
+            {
+                //Draw all points
+                for (int i = 0; i < points.size(); ++i) 
+                {
+                    /*circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
+                    if((points.size() > 1) &&(i != 0)){ 
+                       line(currentImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
+                    }*/
+
+                    if (points.size() == 4)
+                    {
+                        //filtrado(HSVImage, points[0].x, points[0].y, points[1].x, points[3].y);
+                        filtrado(YIQImage, points[0].x, points[0].y, points[1].x, points[3].y);
+                        //filtrado(currentImage, points[0].x, points[0].y, points[1].x, points[3].y);
+                    }
+                }
+                //imshow("Image", currentImage); 
+            }
         }
 
-        char key = waitKey(5);
-
-        switch (key) 
-        {
-            case 'a': yaw = -20000.0; break;
-            case 'd': yaw = 20000.0; break;
-            case 'w': height = -20000.0; break;
-            case 's': height = 20000.0; break;
-            case 'q': heli->takeoff(); break;
-            case 'e': heli->land(); break;
-            case 'z': heli->switchCamera(0); break;
-            case 'x': heli->switchCamera(1); break;
-            case 'c': heli->switchCamera(2); break;
-            case 'v': heli->switchCamera(3); break;
-            case 'j': roll = -20000.0; break;
-            case 'l': roll = 20000.0; break;
-            case 'i': pitch = -20000.0; break;
-            case 'k': pitch = 20000.0; break;
-            case 'h': hover = (hover + 1) % 2; break;
-            case 27: stop = true; break;
-            default: pitch = roll = yaw = height = 0.0;
-        }
-
-        if (joypadTakeOff) 
-        {
-            heli->takeoff();
-        }
-        
-        if (joypadLand) 
-        {
-            heli->land();
-        }
-            //hover = joypadHover ? 1 : 0;
-
-            //setting the drone angles
-        if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
-        {
-            heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
-            navigatedWithJoystick = true;
-        }
-        else
-        {
-            heli->setAngles(pitch, roll, yaw, height, hover);
-            navigatedWithJoystick = false;
-        }
-
+        readUserInput();
+        joypadChanges();
         usleep(15000);
     }
 
@@ -606,4 +509,3 @@ int main(int argc,char* argv[])
     delete image;
     return 0;
 }
-
