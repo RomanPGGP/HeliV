@@ -207,7 +207,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
         case CV_EVENT_LBUTTONDOWN:
             Px=x;
             Py=y;
-            destination = (uchar*) currentImage.ptr<uchar>(Py);
+            destination = (uchar*) clickedImage.ptr<uchar>(Py);
             vB=destination[Px * 3];
             vG=destination[Px*3+1];
             vR=destination[Px*3+2];
@@ -280,105 +280,85 @@ void findUmbral(){
     cout << "couleurs max et min umbral" << maxRGB << "  " << minRGB << "  " << endl;
 }
 
-void filter()
+void filtrado(const Mat &sourceImage, int posXinit, int posYinit, int posXlong, int posYlong, int option)
 {
-    int Ymin, Imin, Qmin;
-    int Ymax, Imax, Qmax;
-    int R, G, B;
-    int Y, I, Q; 
-    
-    RGBImage_filtered = currentImage.clone();
-    YIQImage_filtered = YIQImage.clone();
     uchar* destination;
-    for (int y = 0; y < currentImage.rows; ++y)      
-        for (int x = 0; x < currentImage.cols; ++x)  
-        {
-            //RGB
-            //B = currentImage.at<Vec3b>(y, x).val[1];
-            //G = currentImage.at<Vec3b>(y, x).val[2];
-            //R = currentImage.at<Vec3b>(y, x).val[3];
-	    destination = (uchar*) currentImage.ptr<uchar>(y);
-            B=destination[x * 3];
-            G=destination[x*3+1];
-            R=destination[x*3+2];
-
-            cout << R << "  " << G << " " << B << "  " << endl;
-            
-            if (B > maxRGB[2]-10 || B < minRGB[2]-10)
-            {
-                RGBImage_filtered.at<Vec3b>(y, x) = Vec3b(255,255,255); 
-                //RGBImage_filtered.at<Vec3b>(y, x)[1] = 0;
-                //RGBImage_filtered.at<Vec3b>(y, x)[2] = 0;
-                //RGBImage_filtered.at<Vec3b>(y, x)[3] = 0;
+        int blue, green, red;
+    
+    Mat destImage;
+    
+    for (int k = posXinit; k < posXlong; k++){
+           for (int j = posYinit; j < posYlong; j++){
+            destination = (uchar*) sourceImage.ptr<uchar>(j);
+            blue=destination[k * 3];
+            green=destination[k*3+1];
+            red=destination[k*3+2];
+            if (blue < minRGB[0]){
+                minRGB[0] = blue;
             }
 
-            if (G > maxRGB[1]-10 || G < minRGB[1]-10)
-            {
-                RGBImage_filtered.at<Vec3b>(y, x) = Vec3b(255,255,255); 
-                //RGBImage_filtered.at<Vec3b>(y, x)[1] = 0;
-                //RGBImage_filtered.at<Vec3b>(y, x)[2] = 0;
-                //RGBImage_filtered.at<Vec3b>(y, x)[3] = 0;
+            if (blue > maxRGB[0]){
+                maxRGB[0] = blue;
             }
 
-            if (R > maxRGB[0]-10 || R < minRGB[0]-10)
+            if (green < minRGB[1]){
+                minRGB[1] = green;
+            }
+
+            if (green > maxRGB[1]){
+                maxRGB[1] = green;
+            }
+
+            if (red < minRGB[2]){
+                minRGB[2] = red;
+            }
+            if (red > maxRGB[2]){
+                maxRGB[2] = red;
+            }
+
+        }
+    }
+    destImage=sourceImage.clone();
+    for (int y = 0; y < sourceImage.rows; ++y){
+            for (int x = 0; x < sourceImage.cols; ++x)  
             {
-                RGBImage_filtered.at<Vec3b>(y, x) = Vec3b(255,255,255); 
-                //RGBImage_filtered.at<Vec3b>(y, x)[1] = 0;
-                //RGBImage_filtered.at<Vec3b>(y, x)[2] = 0;
-                //RGBImage_filtered.at<Vec3b>(y, x)[3] = 0;
+            destination = (uchar*) destImage.ptr<uchar>(y);
+                    blue=destination[x * 3];
+                    green=destination[x*3+1];
+                    red=destination[x*3+2];
+
+            if (blue > maxRGB[0] || blue < minRGB[0])
+                    {
+                if (green > maxRGB[1] || green < minRGB[1])
+                        {   destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);
+                }
+                else if (red > maxRGB[2] || red < minRGB[2])
+                {   destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+            }
+            if (green > maxRGB[1] || green < minRGB[1])
+                    {
+                if (blue > maxRGB[0] || blue < minRGB[0])
+                        {   destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+                else if (red > maxRGB[2] || red < minRGB[2])
+                                {       destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+            }
+            if (red > maxRGB[2] || red < minRGB[2])
+                {
+                        if (blue > maxRGB[0] || blue < minRGB[0])
+                                {        destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+                else if (green > maxRGB[1] || green < minRGB[1])
+                                {        destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
             }
         }
+    }
 
+    if (option == 0)
+        imshow("Filtrado RGB", destImage);
+    else if (option == 1)
+        imshow("Filtrado HSV", destImage);
+    else if (option == 3)
+        imshow("Fitrado YIQ", destImage);
 
-    for (int y = 0; y < YIQImage.rows; ++y)      
-        for (int x = 0; x < YIQImage.cols; ++x)  
-        {
-            //YIQ
-            Y = YIQImage.at<Vec3b>(y, x).val[1];
-            I = YIQImage.at<Vec3b>(y, x).val[2];
-            Q = YIQImage.at<Vec3b>(y, x).val[3];
-
-            Ymin = 0.299*minRGB[0] + 0.587*minRGB[1] + 0.114*minRGB[2];
-            Imin = 0.596*minRGB[0] - 0.275*minRGB[1] - 0.321*minRGB[2];
-            Qmin = 0.212*minRGB[0] - 0.523*minRGB[1] + 0.311*minRGB[2];
-
-            Ymax = 0.299*maxRGB[0] + 0.587*maxRGB[1] + 0.114*maxRGB[2];
-            Imax = 0.596*maxRGB[0] - 0.275*maxRGB[1] - 0.321*maxRGB[2];
-            Qmax = 0.212*maxRGB[0] - 0.523*maxRGB[1] + 0.311*maxRGB[2];           
-
-            if (Y > Ymax || Y < Ymin)
-            {
-                //YIQImage_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
-                YIQImage_filtered.at<Vec3b>(Point(x, y))[1] = 1;
-                YIQImage_filtered.at<Vec3b>(Point(x, y))[1] = 255;
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[2] = 0;
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[3] = 0;            
-            }
-
-            if (I > Imax || I < Imin)
-            {
-                //YIQImage_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[1] = 0;
-                YIQImage_filtered.at<Vec3b>(Point(x, y))[2] = 255;
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[3] = 0;  
-            }
-
-            if (Q > Qmax || Q < Qmin)
-            {
-                //YIQImage_filtered.at<Vec3b>(Point(x, y)) = Vec3b(255,255,255);
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[1] = 0;
-                YIQImage_filtered.at<Vec3b>(Point(x, y))[2] = 255;
-                //YIQImage_filtered.at<Vec3b>(Point(x, y))[3] = 0;   
-            }
-        }
-
-    //HSV
-    cvtColor(RGBImage_filtered, HSVImage_filtered, CV_RGB2HSV);   
-    imshow("HSV_FILTERED", HSVImage_filtered);                         
-    imshow("RGB_FILTERED", RGBImage_filtered);                          
-    imshow("YIQ_FILTERED", YIQImage_filtered);                          
-
-    clicked = false;
 }
 
 void printInformation()
@@ -490,7 +470,7 @@ int main(int argc,char* argv[])
         SDL_JoystickClose(m_joystick);
         m_joystick = SDL_JoystickOpen(0);
     }
-  
+
     namedWindow("Image");                                         
     setMouseCallback("Image", mouseCoordinatesExampleCallback);   
 
@@ -547,9 +527,11 @@ int main(int argc,char* argv[])
             histogram(currentImage);
 
         if (clicked){
-            clickedImage = currentImage;
+            namedWindow("Click");
+            setMouseCallback("Click", mouseCoordinatesExampleCallback);
+            clickedImage = currentImage.clone();
             clicked = false;
-            imshow("Clicked", clickedImage);
+            imshow("Click", clickedImage);
             
             if (clickedImage.data) 
             {
@@ -561,7 +543,12 @@ int main(int argc,char* argv[])
                        line(currentImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
                     }*/
 
-                    //INSERTE IF DE ROMÁN
+                    if (points.size() == 4)
+                    {   
+                        filtrado(HSVImage, points[0].x, points[0].y, points[1].x, points[3].y, 1);
+                        filtrado(YIQImage, points[0].x, points[0].y, points[1].x, points[3].y, 2);
+                        filtrado(currentImage, points[0].x, points[0].y, points[1].x, points[3].y, 0);
+                    }
                 }
                 //imshow("Image", currentImage); 
             }

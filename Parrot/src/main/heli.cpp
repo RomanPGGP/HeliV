@@ -203,7 +203,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
             vB=destination[Px * 3];
             vG=destination[Px*3+1];
             vR=destination[Px*3+2];
-        clickCounter++;
+            clickCounter++;
             points.push_back(Point(x, y));
         break;
         case CV_EVENT_RBUTTONDOWN:
@@ -475,7 +475,7 @@ int main(int argc,char* argv[])
         if (clicked){
             clickedImage = currentImage;
             clicked = false;
-            imshow("Clicked", clickedImage);
+            imshow("Click", clickedImage);
             
             if (clickedImage.data) 
             {
