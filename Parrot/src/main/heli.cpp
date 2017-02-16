@@ -231,13 +231,17 @@ void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
             }
 }
 
-void filtrado(const Mat &sourceImage, int posXinit, int posYinit, int posXlong, int posYlong)
+void filtrado(const Mat &sourceImage, int posXinit, int posYinit, int posXlong, int posYlong, int op)
 {
     uchar* destination;
-        int blue, green, red;
-    
+    int blue, green, red;
+    minRGB[0]=255;
+    minRGB[1]=255;
+    minRGB[2]=255;
+    maxRGB[0]=0;
+    maxRGB[1]=0;
+    maxRGB[2]=0;
     Mat destImage;
-    
     for (int k = posXinit; k < posXlong; k++){
            for (int j = posYinit; j < posYlong; j++){
             destination = (uchar*) sourceImage.ptr<uchar>(j);
@@ -271,7 +275,7 @@ void filtrado(const Mat &sourceImage, int posXinit, int posYinit, int posXlong, 
     }
     destImage=sourceImage.clone();
     for (int y = 0; y < sourceImage.rows; ++y){
-            for (int x = 0; x < sourceImage.cols; ++x)  
+            for (int x = 0; x < sourceImage.cols; ++x)
             {
             destination = (uchar*) destImage.ptr<uchar>(y);
                     blue=destination[x * 3];
@@ -279,33 +283,26 @@ void filtrado(const Mat &sourceImage, int posXinit, int posYinit, int posXlong, 
                     red=destination[x*3+2];
 
             if (blue > maxRGB[0] || blue < minRGB[0])
-                    {
-                if (green > maxRGB[1] || green < minRGB[1])
-                        {   destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);
-                }
-                else if (red > maxRGB[2] || red < minRGB[2])
-                {   destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+            {
+		destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);
             }
             if (green > maxRGB[1] || green < minRGB[1])
-                    {
-                if (blue > maxRGB[0] || blue < minRGB[0])
-                        {   destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
-                else if (red > maxRGB[2] || red < minRGB[2])
-                                {       destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+            {
+		destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);
             }
             if (red > maxRGB[2] || red < minRGB[2])
-                {
-                        if (blue > maxRGB[0] || blue < minRGB[0])
-                                {        destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
-                else if (green > maxRGB[1] || green < minRGB[1])
-                                {        destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);}
+            {
+                destImage.at<Vec3b>(y, x) = Vec3b(255,255,255);
             }
         }
     }
 
-
-    imshow("Filtrado", destImage);
-
+    if (op == 0)
+		imshow("Filtrado_RGB", destImage);
+	else if (op == 1)
+		imshow("Filtrado_HSV", destImage);
+	else if (op == 2)
+		imshow("Filtrado_YIQ", destImage);
 }
 
 void printInformation()
@@ -473,29 +470,16 @@ int main(int argc,char* argv[])
         
 
         if (clicked){
-            clickedImage = currentImage;
+            clickedImage = currentImage.clone();
             clicked = false;
             imshow("Click", clickedImage);
             
-            if (clickedImage.data) 
-            {
-                //Draw all points
-                for (int i = 0; i < points.size(); ++i) 
-                {
-                    /*circle(currentImage, (Point)points[i], 5, Scalar( 0, 0, 255 ), CV_FILLED);
-                    if((points.size() > 1) &&(i != 0)){ 
-                       line(currentImage, (Point)points[i-1],(Point)points[i],Scalar( 0, 0, 255), 3,4,0); 
-                    }*/
-
-                    if (points.size() == 4)
+                    if (points.size() > 0 && points.size() % 4 == 0)
                     {
-                        //filtrado(HSVImage, points[0].x, points[0].y, points[1].x, points[3].y);
-                        filtrado(YIQImage, points[0].x, points[0].y, points[1].x, points[3].y);
-                        //filtrado(currentImage, points[0].x, points[0].y, points[1].x, points[3].y);
+                        filtrado(currentImage, points[0].x, points[0].y, points[1].x, points[3].y, 0);
+                        filtrado(HSVImage, points[0].x, points[0].y, points[1].x, points[3].y, 1);
+                        filtrado(YIQImage, points[0].x, points[0].y, points[1].x, points[3].y, 2);
                     }
-                }
-                //imshow("Image", currentImage); 
-            }
         }
 
         readUserInput();
